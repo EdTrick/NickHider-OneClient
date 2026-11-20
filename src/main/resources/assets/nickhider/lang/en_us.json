@@ -1,0 +1,13 @@
+{
+  "nickhider.title": "NickHider",
+  "nickhider.enablenick": "Enable Nick Hider",
+  "nickhider.enablenick.desc": "Toggle client-side nickname hiding on or off",
+  "nickhider.fakenick": "Fake Nick",
+  "nickhider.fakenick.desc": "Client-side nickname to display (supports & color codes, max 30 chars)",
+  "nickhider.applynick": "Apply",
+  "nickhider.enableskin": "Enable Skin Hider",
+  "nickhider.enableskin.desc": "Toggle client-side custom skin on or off",
+  "nickhider.fakeskin": "Fake Skin (IGN)",
+  "nickhider.fakeskin.desc": "Minecraft username whose skin will be applied client-side",
+  "nickhider.applyskin": "Apply Skin"
+}

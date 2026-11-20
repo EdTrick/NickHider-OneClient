@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "nickhider",
+  "version": "${version}",
+  "name": "NickHider",
+  "description": "Client-side mod to hide your real Minecraft IGN and skin.",
+  "authors": [
+    "EdTrick"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/nickhider/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.edtrick.nickhider.NickHiderMod"
+    ]
+  },
+  "mixins": [
+    "nickhider.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": "1.8.9",
+    "java": ">=8"
+  }
+}

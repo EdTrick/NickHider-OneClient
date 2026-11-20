@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "package": "dev.edtrick.nickhider.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+    "MixinEntityPlayerSP",
+    "MixinNetworkPlayerInfo",
+    "MixinAbstractClientPlayer",
+    "MixinGuiNewChat",
+    "MixinGuiPlayerTabOverlay",
+    "MixinScorePlayerTeam",
+    "MixinRender",
+    "MixinGuiIngame",
+    "MixinGuiChat",
+    "MixinGuiScreen",
+    "MixinShellSession",
+    "MixinTileEntitySkullRenderer",
+    "MixinItemSkull",
+    "NetworkPlayerInfoAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
