@@ -62,7 +62,7 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
 - **Dynamic Server Nick Detection:** If you play on servers with their own `/nick` system (such as Hypixel, Minemen Club, etc.), NickHider automatically detects your randomized server nick and replaces it with your chosen fake nick everywhere.
 - **Smart Preservation:** Does not break team prefixes, health icons, scoreboard points, or server ranks.
 
-<img src="./images/1.png" alt="Hidden Nick & Skin" width="250" />
+<img src="./images/1.png" alt="Hidden Nick & Skin" width="720" />
 
 ---
 
@@ -80,7 +80,7 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
 - **3D Skull Head Rendering:** Any player skull matching your player (in your inventory, hotbar, open chests, held items, armor/helmet slot, or placed in the world) automatically renders the 3D head of your fake skin.
 - **Display Name Localization:** Player skull items dynamically display your fake nickname (e.g. `EdTrick's Head` instead of your real IGN).
 
-<img src="./images/3.png" alt="Hidden Skin Skull" width="250" />
+<img src="./images/3.png" alt="Hidden Skin Skull" width="720" />
 
 ---
 
@@ -89,7 +89,7 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
 - **Intuitive Toggles:** Independent `Enable Nick Hider` and `Enable Skin Hider` switches with dedicated text inputs for instant adjustments.
 - **OneClient Sidebar Account Protection:** Replaces your real account name in the bottom-left corner of the OneClient mod menu (next to your skin avatar) without interfering with Mojang authentication or PolyPlus session tokens.
 
-<img src="./images/4.png" alt="OneConfig Support" width="250" />
+<img src="./images/4.png" alt="OneConfig Support" width="720" />
 
 ---
 
@@ -97,7 +97,7 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
 - **Full Tab-Completion:** Press `Tab` on `/nick<TAB>` or `/nickhider<TAB>` to complete all subcommands and parameters.
 - **Clickable Chat Menu:** Running `/nickhider help` prints an elegant, numbered list of commands with hover descriptions and click-to-prepare suggestions.
 
-<img src="./images/5.png" alt="Interactive Help Menu" width="250" />
+<img src="./images/5.png" alt="Interactive Help Menu" width="720" />
 
 ---
 
