@@ -121,11 +121,11 @@ You can use `/nickhider`:
 
 | Command | Description | Example |
 | :--- | :--- | :--- |
-| `/nickhider nick <name>` | Sets a fake client-side nickname (supports `&` color codes) | `/nick nick &6&lEdTrick` |
-| `/nickhider unnick` | Resets nickname back to your real account name | `/nick unnick` |
-| `/nickhider skin <player>` | Sets your client-side skin to any Minecraft player's skin | `/nick skin Kolijn` |
-| `/nickhider realskin` | Resets skin back to your real account skin | `/nick realskin` |
-| `/nickhider help` | Displays the interactive command help menu | `/nick help` |
+| `/nickhider nick <name>` | Sets a fake client-side nickname (supports `&` color codes) | `/nickhider nick &6&lEdTrick` |
+| `/nickhider unnick` | Resets nickname back to your real account name | `/nickhider unnick` |
+| `/nickhider skin <player>` | Sets your client-side skin to any Minecraft player's skin | `/nickhider skin Kolijn` |
+| `/nickhider realskin` | Resets skin back to your real account skin | `/nickhider realskin` |
+| `/nickhider help` | Displays the interactive command help menu | `/nickhider help` |
 
 > [!TIP]
 > You can click on any command in the `/nickhider help` chat message to auto-fill it directly into your chat bar!
@@ -160,7 +160,7 @@ NickHider stores its settings in two locations depending on whether you use OneC
 - *(Optional)* [OneConfig](https://polyfrost.org/) for the graphical in-game settings menu.
 
 ### Installation Steps:
-1. Download the latest `nickhider-x.x.x.jar` from the [Releases](https://github.com/EdTrick/nickhider-fabric-1.8.9/releases) tab.
+1. Download the latest `nickhider-x.x.x.jar` from the [Releases](https://github.com/EdTrick/NickHider-OneClient/releases/tag/MOD) tab.
 2. Place the downloaded `.jar` file into your `.minecraft/mods` folder (or your OneClient cluster `mods` folder).
 3. Launch Minecraft 1.8.9 with Fabric / OneClient.
 
