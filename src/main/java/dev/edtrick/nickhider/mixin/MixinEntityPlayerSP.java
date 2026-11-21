@@ -66,13 +66,33 @@ public class MixinEntityPlayerSP {
                 if (info != null && info.getGameProfile() != null) {
                     String currentTabName = info.getGameProfile().getName();
                     String realName = (mc.getSession() != null) ? mc.getSession().getUsername() : null;
-                    if (currentTabName != null && !currentTabName.isEmpty()) {
-                        if (realName != null && !currentTabName.equalsIgnoreCase(realName)) {
-                            String fake = dev.edtrick.nickhider.NickHiderMod.getFakeNick();
-                            if (fake == null || !currentTabName.equalsIgnoreCase(dev.edtrick.nickhider.NickHiderMod.stripColorCodes(fake))) {
-                                String currentDetected = dev.edtrick.nickhider.NickHiderMod.getDetectedChatNick();
-                                if (currentDetected == null || !currentDetected.equalsIgnoreCase(currentTabName)) {
-                                    dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(currentTabName);
+                    if (currentTabName != null && !currentTabName.isEmpty() && realName != null) {
+                        // Check if we are in a Hypixel replay (spectator viewer)
+                        boolean isReplay = false;
+                        if (info.getDisplayName() != null && info.getDisplayName().getUnformattedText().contains("[Viewer]")) {
+                            isReplay = true;
+                        } else {
+                            for (net.minecraft.client.network.NetworkPlayerInfo pi : mc.getNetHandler().getPlayerInfoMap()) {
+                                if (pi != null && pi.getDisplayName() != null && pi.getDisplayName().getUnformattedText().contains("[Viewer]")) {
+                                    isReplay = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!isReplay) {
+                            if (!currentTabName.equalsIgnoreCase(realName)) {
+                                String fake = dev.edtrick.nickhider.NickHiderMod.getFakeNick();
+                                if (fake == null || !currentTabName.equalsIgnoreCase(dev.edtrick.nickhider.NickHiderMod.stripColorCodes(fake))) {
+                                    String currentDetected = dev.edtrick.nickhider.NickHiderMod.getDetectedChatNick();
+                                    if (currentDetected == null || !currentDetected.equalsIgnoreCase(currentTabName)) {
+                                        dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(currentTabName);
+                                    }
+                                }
+                            } else {
+                                // Player is visibly un-nicked on the server! Clear any stale serverNick
+                                if (dev.edtrick.nickhider.NickHiderMod.getDetectedChatNick() != null) {
+                                    dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(null);
                                 }
                             }
                         }

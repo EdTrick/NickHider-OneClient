@@ -151,14 +151,15 @@ public class NickHiderCommand {
             if (current != null) {
                 NickHiderMod.sendMessage("§7Current server-side nick: §b" + current);
             } else {
-                NickHiderMod.sendMessage("§7No server-side nick currently detected. (Auto-detected when chatting or via Hypixel /nick).");
+                NickHiderMod.sendMessage("§7No server-side nick currently active. (Only your real IGN is replaced).");
             }
             return;
         }
-        if (input.equalsIgnoreCase("reset") || input.equalsIgnoreCase("clear")) {
+        if (input.equalsIgnoreCase("reset") || input.equalsIgnoreCase("clear")
+                || input.equalsIgnoreCase("none") || input.equalsIgnoreCase("auto")) {
             NickHiderMod.setDetectedChatNick(null);
             invalidateSkinCache();
-            NickHiderMod.sendMessage("§aServer-side nick cleared.");
+            NickHiderMod.sendMessage("§aServer-side nick cleared. (Now only replacing your real IGN: §f" + getRealName() + "§a).");
             return;
         }
         String clean = NickHiderMod.stripColorCodes(input).trim();
@@ -196,6 +197,16 @@ public class NickHiderCommand {
 
         NickHiderMod.sendMessage("§6Players found in this world / replay (click to set as your nick):");
         ChatComponentText line = new ChatComponentText("");
+
+        // Reset button
+        ChatComponentText resetBtn = new ChatComponentText("§c[Reset / Real IGN] ");
+        ChatStyle resetStyle = new ChatStyle();
+        resetStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/nickhider replay reset"));
+        resetStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                new ChatComponentText("§eClick to clear server nick and only replace your real IGN (" + getRealName() + ")")));
+        resetBtn.setChatStyle(resetStyle);
+        line.appendSibling(resetBtn);
+
         for (String pName : playerNames) {
             ChatComponentText btn = new ChatComponentText("§b[" + pName + "] ");
             ChatStyle style = new ChatStyle();

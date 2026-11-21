@@ -192,6 +192,11 @@ public class NickHiderMod implements ClientModInitializer {
         if (realSkinUrl != null) prop.setProperty("realSkinUrl", realSkinUrl);
         if (realSkinProperty != null && realSkinProperty.getValue() != null) prop.setProperty("realSkinValue", realSkinProperty.getValue());
 
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc != null && mc.getSession() != null && mc.getSession().getUsername() != null) {
+            prop.setProperty("lastAccountIgn", mc.getSession().getUsername());
+        }
+
         prop.setProperty("enableBwLevel", String.valueOf(dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()));
         prop.setProperty("bwStars", String.valueOf(dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFakeStars()));
         prop.setProperty("bwColorPreset", String.valueOf(dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getColorPresetLevel()));
@@ -215,7 +220,15 @@ public class NickHiderMod implements ClientModInitializer {
             fakeSkinValue     = prop.getProperty("fakeSkinValue", null);
             fakeSkinSignature = prop.getProperty("fakeSkinSignature", null);
             fakeSkinOwner     = prop.getProperty("fakeSkinOwner", null);
-            detectedChatNick  = prop.getProperty("serverNick", null);
+            String lastAccountIgn = prop.getProperty("lastAccountIgn", null);
+            Minecraft mc = Minecraft.getMinecraft();
+            String currentAccountIgn = (mc != null && mc.getSession() != null) ? mc.getSession().getUsername() : null;
+            if (lastAccountIgn != null && currentAccountIgn != null && !lastAccountIgn.equalsIgnoreCase(currentAccountIgn)) {
+                // Different Minecraft account than last time! Reset server-side nick
+                detectedChatNick = null;
+            } else {
+                detectedChatNick = prop.getProperty("serverNick", null);
+            }
             realSkinUrl       = prop.getProperty("realSkinUrl", null);
             String savedRealSkinValue = prop.getProperty("realSkinValue", null);
             if (savedRealSkinValue != null && !savedRealSkinValue.isEmpty()) {
