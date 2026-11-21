@@ -30,12 +30,13 @@ public class MixinEntityPlayerSP {
         } else {
             if (lower.startsWith("/nick ")) {
                 String arg = trimmed.substring(6).trim();
-                if (!arg.equalsIgnoreCase("reset") && !arg.equalsIgnoreCase("help") && !arg.equalsIgnoreCase("random")) {
+                if (!arg.equalsIgnoreCase("reset") && !arg.equalsIgnoreCase("help") && !arg.equalsIgnoreCase("random")
+                        && !arg.equalsIgnoreCase("off") && !arg.equalsIgnoreCase("clear") && !arg.equalsIgnoreCase("remove")) {
                     String clean = arg.replaceAll("[^A-Za-z0-9_]", "");
                     if (clean.length() >= 3 && clean.length() <= 16) {
                         dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(clean);
                     }
-                } else if (arg.equalsIgnoreCase("reset")) {
+                } else if (arg.equalsIgnoreCase("reset") || arg.equalsIgnoreCase("off") || arg.equalsIgnoreCase("clear") || arg.equalsIgnoreCase("remove")) {
                     dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(null);
                 }
             } else if (lower.equals("/unnick")) {
@@ -88,11 +89,6 @@ public class MixinEntityPlayerSP {
                                     if (currentDetected == null || !currentDetected.equalsIgnoreCase(currentTabName)) {
                                         dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(currentTabName);
                                     }
-                                }
-                            } else {
-                                // Player is visibly un-nicked on the server! Clear any stale serverNick
-                                if (dev.edtrick.nickhider.NickHiderMod.getDetectedChatNick() != null) {
-                                    dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(null);
                                 }
                             }
                         }

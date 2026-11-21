@@ -17,7 +17,7 @@ public class MixinGuiNewChat {
             "(?i)(?:nicked as|nickname is(?: now)?|nick(?:name)?\\s*:\\s*|known as|name (?:has been )?changed to)\\s*[:\"'\\s]*(?:\\[[^\\]]+\\]\\s*)?([A-Za-z0-9_]{3,16})"
     );
     private static final Pattern UNNICK_PAT = Pattern.compile(
-            "(?i)(?:no longer nicked|nick(?:name)? (?:has been )?reset|removed your nick)"
+            "(?i)(?:no longer nicked|nick(?:name)? (?:has been )?(?:reset|removed|cleared)|removed your nick)"
     );
 
     @ModifyVariable(method = "printChatMessageWithOptionalDeletion", at = @At("HEAD"), argsOnly = true, ordinal = 0)

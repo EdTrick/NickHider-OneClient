@@ -4,7 +4,7 @@ plugins {
     id("ploceus") version "1.17-SNAPSHOT"
 }
 
-version = "1.1.2"
+version = "1.1.3"
 group = "dev.edtrick"
 
 base {
