@@ -217,7 +217,7 @@ NickHider stores its settings in two locations depending on whether you use OneC
 - *(Optional)* [OneConfig](https://polyfrost.org/) for the graphical in-game settings menu.
 
 ### Installation Steps:
-1. Download the latest `nickhider-x.x.x.jar` from the [Releases](https://github.com/EdTrick/NickHider-OneClient/releases/tag/BEDWARS_LEVEL) tab.
+1. Download the latest `nickhider-x.x.x.jar` from the [Releases](https://github.com/EdTrick/NickHider-OneClient/releases/latest) tab.
 2. Place the downloaded `.jar` file into your `.minecraft/mods` folder (or your OneClient cluster `mods` folder).
 3. Launch Minecraft 1.8.9 with Fabric / OneClient.
 
