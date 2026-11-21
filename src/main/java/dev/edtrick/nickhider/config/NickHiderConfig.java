@@ -80,6 +80,87 @@ public class NickHiderConfig extends Config {
         save();
     }
 
+    // ─── Bedwars Level Section ───────────────────────────────────────────────
+
+    @Switch(
+            title = "Enable Bedwars Level",
+            description = "Toggle client-side Bedwars stars & prestige spoofing on or off",
+            subcategory = "Bedwars Level"
+    )
+    public static boolean enableBwLevel = false;
+
+    @Text(
+            title = "Bedwars Stars",
+            description = "Numeric level (0 - 10000)",
+            placeholder = "e.g. 1402",
+            subcategory = "Bedwars Level"
+    )
+    public static String bwStars = "1402";
+
+    @Text(
+            title = "Color Scheme Preset",
+            description = "Prestige level to borrow colors from (e.g. 1200, gold_prime) or 'auto'",
+            placeholder = "auto",
+            subcategory = "Bedwars Level"
+    )
+    public static String bwColorPreset = "auto";
+
+    @Text(
+            title = "Star Icon",
+            description = "Star symbol (✫, ✪, ⚝, ✥, ✭) or prestige preset (or 'auto')",
+            placeholder = "auto",
+            subcategory = "Bedwars Level"
+    )
+    public static String bwIconPreset = "auto";
+
+    @Button(
+            title = "Apply Bedwars Level",
+            text = "Apply",
+            description = "Apply Bedwars level and prestige configuration",
+            subcategory = "Bedwars Level"
+    )
+    public void applyBwLevel() {
+        syncing = true;
+        try {
+            boolean inEnabled = enableBwLevel;
+            String inStars = (bwStars != null) ? bwStars.trim() : "";
+            String inColor = (bwColorPreset != null) ? bwColorPreset.trim() : "";
+            String inIcon = (bwIconPreset != null) ? bwIconPreset.trim() : "";
+
+            int stars = 1402;
+            if (!inStars.isEmpty()) {
+                try {
+                    stars = Integer.parseInt(inStars);
+                } catch (NumberFormatException ignored) {}
+            }
+
+            int colorLevel = -1;
+            if (!inColor.isEmpty() && !inColor.equalsIgnoreCase("auto") && !inColor.equalsIgnoreCase("reset")) {
+                dev.edtrick.nickhider.bedwars.BedwarsPrestige p = dev.edtrick.nickhider.bedwars.BedwarsPrestige.find(inColor);
+                if (p != null) {
+                    colorLevel = p.level;
+                }
+            }
+
+            String icon = null;
+            if (!inIcon.isEmpty() && !inIcon.equalsIgnoreCase("auto") && !inIcon.equalsIgnoreCase("reset")) {
+                icon = dev.edtrick.nickhider.bedwars.BedwarsPrestige.resolveIcon(inIcon);
+            }
+
+            dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setAll(inEnabled, stars, colorLevel, icon);
+
+            bwStars = String.valueOf(stars);
+            bwColorPreset = (colorLevel >= 0) ? String.valueOf(colorLevel) : "auto";
+            bwIconPreset = (icon != null) ? icon : "auto";
+            enableBwLevel = inEnabled;
+
+            save();
+            NickHiderMod.sendMessage("§aBedwars level configuration applied: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag());
+        } finally {
+            syncing = false;
+        }
+    }
+
     // ─── Constructor & Callbacks ─────────────────────────────────────────────
 
     public NickHiderConfig() {
@@ -114,9 +195,19 @@ public class NickHiderConfig extends Config {
             }
             save();
         });
+
+        addCallback("enableBwLevel", () -> {
+            if (syncing) return;
+            dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(enableBwLevel);
+            save();
+            NickHiderMod.sendMessage(enableBwLevel
+                    ? "§aBedwars Level spoofing enabled: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag()
+                    : "§eBedwars Level spoofing disabled.");
+        });
     }
 
     public void syncFromMod() {
+        if (syncing) return;
         syncing = true;
         try {
             enableNickHider = (NickHiderMod.getFakeNick() != null);
@@ -127,6 +218,13 @@ public class NickHiderConfig extends Config {
             if (NickHiderMod.getFakeSkinOwner() != null) {
                 fakeSkin = NickHiderMod.getFakeSkinOwner();
             }
+
+            enableBwLevel = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled();
+            bwStars = String.valueOf(dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFakeStars());
+            int c = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getColorPresetLevel();
+            bwColorPreset = (c >= 0) ? String.valueOf(c) : "auto";
+            String ic = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getCustomIcon();
+            bwIconPreset = (ic != null) ? ic : "auto";
         } finally {
             syncing = false;
         }

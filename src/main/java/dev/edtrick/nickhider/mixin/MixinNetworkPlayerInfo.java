@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(NetworkPlayerInfo.class)
+@Mixin(value = NetworkPlayerInfo.class, priority = 999999)
 public class MixinNetworkPlayerInfo {
 
     @Shadow
@@ -66,6 +66,20 @@ public class MixinNetworkPlayerInfo {
                     "textures",
                     new Property("textures", fakeSkinValue, sig != null ? sig : "")
             );
+        }
+    }
+
+    @Inject(method = "getDisplayName", at = @At("RETURN"), cancellable = true)
+    private void nickhider_getDisplayName(CallbackInfoReturnable<net.minecraft.util.IChatComponent> cir) {
+        if (isLocalPlayer()) {
+            net.minecraft.util.IChatComponent comp = cir.getReturnValue();
+            if (comp != null) {
+                if (dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled() && dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isBedwarsActive()) {
+                    comp = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterChat(comp);
+                }
+                comp = NickHiderMod.filterText(comp);
+                cir.setReturnValue(comp);
+            }
         }
     }
 

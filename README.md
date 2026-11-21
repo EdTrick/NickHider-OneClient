@@ -29,6 +29,7 @@ Hide your real username, spoof any skin on-the-fly, conceal server-side `/nick` 
   - [3. Player Skull & Inventory Integration](#3-player-skull--inventory-integration)
   - [4. OneConfig & OneClient UI Support](#4-oneconfig--oneclient-ui-support)
   - [5. Interactive In-Game Commands & Autocompletion](#5-interactive-in-game-commands--autocompletion)
+  - [6. Hypixel Bedwars Stars & Level Spoofing](#6-hypixel-bedwars-stars--level-spoofing)
 - [📸 Screenshots & Showcase](#-screenshots--showcase)
 - [⌨️ Commands Reference](#️-commands-reference)
 - [⚙️ Configuration](#️-configuration)
@@ -101,6 +102,24 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
 
 ---
 
+### 6. Hypixel Bedwars Stars & Level Spoofing
+- **All 101 Hypixel Prestiges (Levels 0 to 10,000):** Accurate support for every prestige tier from Stone `§7[0✫]` all the way to Prestigious `§9[§b1§f0000§c✭§4]`, including custom digit colors, prestige brackets, and star icons (`✫`, `✪`, `⚝`, `✥`, `✭`).
+- **Mix & Match Customization:** Combine any star level with any prestige color palette and any star icon (e.g. `/nickhider bwlvl stars 1402`, `/nickhider bwlvl color 1200`, `/nickhider bwlvl icon 2000` -> `§7[§e1402§6⚝§7]`).
+- **Universal Multi-Display Spoofing:**
+  - 💬 **Chat Messages** (incoming and outgoing messages featuring your player)
+  - 📋 **Tablist & Player Names**
+  - 📊 **Sidebar Scoreboard** (including `Stars: X` lines and player team rows)
+  - 🎬 **Actionbar & Middle-Screen Display** (text above your hotbar/inventory)
+  - 🏷️ **Nametags, Titles, Subtitles & Holograms**
+- **Interactive Chat Selection Menus:**
+  - `/nickhider bwlvl color`: Displays an interactive chat palette showing all 101 prestiges formatted **5 per line**; clicking any prestige immediately applies its colors.
+  - `/nickhider bwlvl icon`: Displays an interactive chat palette of star icons formatted **5 per line** to click and select.
+- **OneConfig Support:** Configurable via **Visuals ➔ NickHider ➔ Bedwars Level** in the OneConfig menu.
+
+<img src="./images/12.png" alt="Bedwars Level Spoofing" width="720" />
+
+---
+
 ## 📸 Screenshots & Showcase
 
 | Feature | Demonstration |
@@ -121,11 +140,17 @@ You can use `/nickhider`:
 
 | Command | Description | Example |
 | :--- | :--- | :--- |
-| `/nickhider nick <name>` | Sets a fake client-side nickname (supports `&` color codes) | `/nick nick &6&lEdTrick` |
-| `/nickhider unnick` | Resets nickname back to your real account name | `/nick unnick` |
-| `/nickhider skin <player>` | Sets your client-side skin to any Minecraft player's skin | `/nick skin Kolijn` |
-| `/nickhider realskin` | Resets skin back to your real account skin | `/nick realskin` |
-| `/nickhider help` | Displays the interactive command help menu | `/nick help` |
+| `/nickhider nick <name>` | Sets a fake client-side nickname (supports `&` color codes) | `/nickhider nick &6&lEdTrick` |
+| `/nickhider unnick` | Resets nickname back to your real account name | `/nickhider unnick` |
+| `/nickhider skin <player>` | Sets your client-side skin to any Minecraft player's skin | `/nickhider skin Kolijn` |
+| `/nickhider realskin` | Resets skin back to your real account skin | `/nickhider realskin` |
+| `/nickhider bwlvl` | Displays Bedwars level spoofing control panel & status | `/nickhider bwlvl` |
+| `/nickhider bwlvl stars <lvl>` | Sets fake Bedwars stars level (0 - 10000) | `/nickhider bwlvl stars 1402` |
+| `/nickhider bwlvl color [preset]`| Opens prestige color menu or sets a color scheme | `/nickhider bwlvl color 1200` |
+| `/nickhider bwlvl icon [preset]` | Opens star icon menu or sets a custom icon | `/nickhider bwlvl icon 2000` |
+| `/nickhider bwlvl toggle` | Toggles Bedwars level spoofing ON or OFF | `/nickhider bwlvl toggle` |
+| `/nickhider bwlvl reset` | Resets Bedwars spoofing back to default settings | `/nickhider bwlvl reset` |
+| `/nickhider help` | Displays the interactive command help menu | `/nickhider help` |
 
 > [!TIP]
 > You can click on any command in the `/nickhider help` chat message to auto-fill it directly into your chat bar!
@@ -186,7 +211,7 @@ To compile the mod from source code:
      ./gradlew build
      ```
 
-3. The finished `.jar` file will be located in `build/libs/nickhider-1.0.0.jar`.
+3. The finished `.jar` file will be located in `build/libs/nickhider-1.1.0.jar`.
 
 ---
 

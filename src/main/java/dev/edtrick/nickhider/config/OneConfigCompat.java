@@ -46,6 +46,9 @@ public class OneConfigCompat {
                     NickHiderCommand.handleSetSkin(NickHiderConfig.fakeSkin.trim());
                 }
             }
+            if (NickHiderConfig.enableBwLevel && !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) {
+                dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(true);
+            }
         }
 
         static void syncHolder() {

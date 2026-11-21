@@ -33,11 +33,15 @@ public class NickHiderCommand {
 
         if (lower.startsWith("nickhider")) {
             afterCmd = trimmed.substring("nickhider".length()).trim();
+        } else if (lower.startsWith("bwlvl ") || lower.equals("bwlvl")) {
+            afterCmd = "bwlvl " + trimmed.substring("bwlvl".length()).trim();
+        } else if (lower.startsWith("bedwars ") || lower.equals("bedwars")) {
+            afterCmd = "bwlvl " + trimmed.substring("bedwars".length()).trim();
         } else if (lower.startsWith("nick ") || lower.equals("nick")) {
             afterCmd = trimmed.substring("nick".length()).trim();
             if (!afterCmd.isEmpty()) {
                 String firstWord = afterCmd.split("\\s+")[0].toLowerCase();
-                if (!firstWord.equals("realskin") && !firstWord.equals("unnick") && !firstWord.equals("skin")) {
+                if (!firstWord.equals("realskin") && !firstWord.equals("unnick") && !firstWord.equals("skin") && !firstWord.equals("bwlvl") && !firstWord.equals("bedwars")) {
                     afterCmd = "nick " + afterCmd;
                 }
             } else {
@@ -85,6 +89,11 @@ public class NickHiderCommand {
 
             case "realskin":
                 handleRealSkin();
+                return true;
+
+            case "bwlvl":
+            case "bedwars":
+                handleBwLvl(args);
                 return true;
 
             case "help":
@@ -190,6 +199,362 @@ public class NickHiderCommand {
         }
     }
 
+    // ─── Hypixel Bedwars Level Commands ──────────────────────────────────────
+
+    public static void handleBwLvl(String args) {
+        if (args.isEmpty() || args.equalsIgnoreCase("status")) {
+            printBwLvlStatus();
+            return;
+        }
+
+        String[] parts = args.split("\\s+", 2);
+        String sub = parts[0].toLowerCase();
+        String subArg = parts.length > 1 ? parts[1].trim() : "";
+
+        switch (sub) {
+            case "stars":
+            case "level":
+            case "lvl":
+                if (subArg.isEmpty()) {
+                    printBwStarsHelp();
+                } else {
+                    try {
+                        int lvl = Integer.parseInt(subArg);
+                        if (lvl < 0 || lvl > 10000) {
+                            NickHiderMod.sendMessage("§cError: Bedwars level must be between 0 and 10000!");
+                            printBwStarsHelp();
+                            return;
+                        }
+                        dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setFakeStars(lvl);
+                        dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(true);
+                        NickHiderMod.sendMessage("§aBedwars stars set to: §f" + lvl + " §7(Preview: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag() + "§7)");
+                    } catch (NumberFormatException e) {
+                        NickHiderMod.sendMessage("§cError: Invalid number \"" + subArg + "\". Bedwars level must be an integer between 0 and 10000.");
+                        printBwStarsHelp();
+                    }
+                }
+                break;
+
+            case "color":
+            case "colors":
+            case "prestige":
+                if (subArg.isEmpty()) {
+                    printBwColorMenu();
+                } else if (subArg.equalsIgnoreCase("auto") || subArg.equalsIgnoreCase("reset")) {
+                    dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setColorPresetLevel(-1);
+                    dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(true);
+                    NickHiderMod.sendMessage("§aBedwars color scheme reset to §fAuto §7(follows fake stars: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag() + "§7)");
+                } else {
+                    dev.edtrick.nickhider.bedwars.BedwarsPrestige p = dev.edtrick.nickhider.bedwars.BedwarsPrestige.find(subArg);
+                    if (p == null) {
+                        NickHiderMod.sendMessage("§cError: Unknown Bedwars prestige \"" + subArg + "\". Click below or type §e/nickhider bwlvl color §cto view all 101 prestiges.");
+                        printBwColorMenu();
+                        return;
+                    }
+                    dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setColorPresetLevel(p.level);
+                    dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(true);
+                    NickHiderMod.sendMessage("§aBedwars color scheme set to: §f" + p.name + " §7(Tier " + p.level + ") §7(Preview: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag() + "§7)");
+                }
+                break;
+
+            case "icon":
+            case "star":
+                if (subArg.isEmpty()) {
+                    printBwIconMenu();
+                } else if (subArg.equalsIgnoreCase("auto") || subArg.equalsIgnoreCase("reset")) {
+                    dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setCustomIcon(null);
+                    dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(true);
+                    NickHiderMod.sendMessage("§aBedwars star icon reset to §fAuto §7(follows prestige default icon: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag() + "§7)");
+                } else {
+                    String icon = dev.edtrick.nickhider.bedwars.BedwarsPrestige.resolveIcon(subArg);
+                    if (icon == null) {
+                        NickHiderMod.sendMessage("§cError: Unknown star icon \"" + subArg + "\". Choose one from: ✫, ✪, ⚝, ✥, ✭ or a prestige preset.");
+                        printBwIconMenu();
+                        return;
+                    }
+                    dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setCustomIcon(icon);
+                    dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(true);
+                    NickHiderMod.sendMessage("§aBedwars star icon set to: §f" + icon + " §7(Preview: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag() + "§7)");
+                }
+                break;
+
+            case "toggle":
+                boolean newState = !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled();
+                dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(newState);
+                NickHiderMod.sendMessage(newState
+                        ? "§aBedwars level spoofing §2ENABLED §7(Tag: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag() + "§7)"
+                        : "§eBedwars level spoofing §cDISABLED§e.");
+                break;
+
+            case "on":
+            case "enable":
+                dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(true);
+                NickHiderMod.sendMessage("§aBedwars level spoofing §2ENABLED §7(Tag: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag() + "§7)");
+                break;
+
+            case "off":
+            case "disable":
+                dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(false);
+                NickHiderMod.sendMessage("§eBedwars level spoofing §cDISABLED§e.");
+                break;
+
+            case "reset":
+                dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setAll(false, 1402, -1, null);
+                NickHiderMod.sendMessage("§aBedwars level spoofing reset to defaults (disabled, auto color, auto icon).");
+                break;
+
+            default:
+                NickHiderMod.sendMessage("§cUnknown bwlvl option: §f" + sub);
+                printBwLvlStatus();
+                break;
+        }
+    }
+
+    public static void printBwStarsHelp() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) return;
+
+        mc.thePlayer.addChatMessage(new ChatComponentText(
+                NickHiderMod.rainbowPrefix() + " " + EnumChatFormatting.RED + "Bedwars Stars Configuration:"
+        ));
+        mc.thePlayer.addChatMessage(new ChatComponentText(
+                EnumChatFormatting.GRAY + "You must specify a star level between " + EnumChatFormatting.WHITE + "0"
+                + EnumChatFormatting.GRAY + " and " + EnumChatFormatting.WHITE + "10000" + EnumChatFormatting.GRAY + "."
+        ));
+
+        ChatComponentText example = new ChatComponentText(
+                EnumChatFormatting.YELLOW + "▶ Click here to enter stars: " + EnumChatFormatting.GREEN + "/nickhider bwlvl stars <LVL>"
+        );
+        ChatStyle style = new ChatStyle();
+        style.setChatHoverEvent(new HoverEvent(
+                HoverEvent.Action.SHOW_TEXT,
+                new ChatComponentText(EnumChatFormatting.YELLOW + "Click to suggest command in chat")
+        ));
+        style.setChatClickEvent(new ClickEvent(
+                ClickEvent.Action.SUGGEST_COMMAND,
+                "/nickhider bwlvl stars "
+        ));
+        example.setChatStyle(style);
+        mc.thePlayer.addChatMessage(example);
+    }
+
+    public static void printBwColorMenu() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) return;
+
+        mc.thePlayer.addChatMessage(new ChatComponentText(
+                NickHiderMod.rainbowPrefix() + " " + EnumChatFormatting.GOLD + "Select Bedwars Prestige Color Scheme (5 per line):"
+        ));
+
+        // Auto option
+        ChatComponentText autoBtn = new ChatComponentText(EnumChatFormatting.GRAY + "[" + EnumChatFormatting.GREEN + "Auto/Default" + EnumChatFormatting.GRAY + "]");
+        ChatStyle autoStyle = new ChatStyle();
+        autoStyle.setChatHoverEvent(new HoverEvent(
+                HoverEvent.Action.SHOW_TEXT,
+                new ChatComponentText(EnumChatFormatting.AQUA + "Follows your fake stars level automatically\n" + EnumChatFormatting.YELLOW + "▶ Click to select Auto")
+        ));
+        autoStyle.setChatClickEvent(new ClickEvent(
+                ClickEvent.Action.RUN_COMMAND,
+                "/nickhider bwlvl color auto"
+        ));
+        autoBtn.setChatStyle(autoStyle);
+        mc.thePlayer.addChatMessage(autoBtn);
+
+        List<dev.edtrick.nickhider.bedwars.BedwarsPrestige> prestiges = dev.edtrick.nickhider.bedwars.BedwarsPrestige.getAllPrestiges();
+        ChatComponentText line = null;
+        int countInLine = 0;
+
+        for (int i = 0; i < prestiges.size(); i++) {
+            dev.edtrick.nickhider.bedwars.BedwarsPrestige p = prestiges.get(i);
+            if (countInLine == 0) {
+                line = new ChatComponentText("");
+            } else {
+                line.appendSibling(new ChatComponentText(" "));
+            }
+
+            ChatComponentText btn = new ChatComponentText(p.sample);
+            ChatStyle btnStyle = new ChatStyle();
+            btnStyle.setChatHoverEvent(new HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
+                    new ChatComponentText(
+                            EnumChatFormatting.GOLD + "Prestige: " + EnumChatFormatting.WHITE + p.name + "\n"
+                            + EnumChatFormatting.YELLOW + "Tier Level: " + EnumChatFormatting.WHITE + p.level + "\n"
+                            + EnumChatFormatting.AQUA + "Sample: " + p.sample + "\n\n"
+                            + EnumChatFormatting.GREEN + "▶ Click to apply this color scheme"
+                    )
+            ));
+            btnStyle.setChatClickEvent(new ClickEvent(
+                    ClickEvent.Action.RUN_COMMAND,
+                    "/nickhider bwlvl color " + p.level
+            ));
+            btn.setChatStyle(btnStyle);
+            line.appendSibling(btn);
+            countInLine++;
+
+            if (countInLine == 5 || i == prestiges.size() - 1) {
+                mc.thePlayer.addChatMessage(line);
+                countInLine = 0;
+            }
+        }
+    }
+
+    public static void printBwIconMenu() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) return;
+
+        mc.thePlayer.addChatMessage(new ChatComponentText(
+                NickHiderMod.rainbowPrefix() + " " + EnumChatFormatting.GOLD + "Select Bedwars Star Icon (5 per line):"
+        ));
+
+        // Auto option
+        ChatComponentText autoBtn = new ChatComponentText(EnumChatFormatting.GRAY + "[" + EnumChatFormatting.GREEN + "Auto/Default" + EnumChatFormatting.GRAY + "]");
+        ChatStyle autoStyle = new ChatStyle();
+        autoStyle.setChatHoverEvent(new HoverEvent(
+                HoverEvent.Action.SHOW_TEXT,
+                new ChatComponentText(EnumChatFormatting.AQUA + "Follows the prestige default star icon\n" + EnumChatFormatting.YELLOW + "▶ Click to select Auto")
+        ));
+        autoStyle.setChatClickEvent(new ClickEvent(
+                ClickEvent.Action.RUN_COMMAND,
+                "/nickhider bwlvl icon auto"
+        ));
+        autoBtn.setChatStyle(autoStyle);
+        mc.thePlayer.addChatMessage(autoBtn);
+
+        // 5 primary star symbols: ✫, ✪, ⚝, ✥, ✭
+        String[] icons = new String[]{"✫", "✪", "⚝", "✥", "✭"};
+        String[] names = new String[]{"Classic (0-1000)", "Prime (1100-1900)", "Cosmic (2000-2900)", "Crossed (3000-3900)", "Prestige (4000+)"};
+        ChatComponentText symbolLine = new ChatComponentText("");
+        for (int i = 0; i < icons.length; i++) {
+            if (i > 0) symbolLine.appendSibling(new ChatComponentText("  "));
+            String sym = icons[i];
+            ChatComponentText btn = new ChatComponentText(EnumChatFormatting.YELLOW + "[" + EnumChatFormatting.WHITE + " " + sym + " " + EnumChatFormatting.YELLOW + "]");
+            ChatStyle s = new ChatStyle();
+            s.setChatHoverEvent(new HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
+                    new ChatComponentText(
+                            EnumChatFormatting.GOLD + "Star Icon: " + EnumChatFormatting.WHITE + sym + "\n"
+                            + EnumChatFormatting.GRAY + "Style: " + names[i] + "\n\n"
+                            + EnumChatFormatting.GREEN + "▶ Click to apply this icon"
+                    )
+            ));
+            s.setChatClickEvent(new ClickEvent(
+                    ClickEvent.Action.RUN_COMMAND,
+                    "/nickhider bwlvl icon " + sym
+            ));
+            btn.setChatStyle(s);
+            symbolLine.appendSibling(btn);
+        }
+        mc.thePlayer.addChatMessage(symbolLine);
+
+        // Also show major milestone prestige presets (5 per line)
+        int[] milestoneLevels = new int[]{0, 500, 1000, 1100, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7000, 8000, 9000};
+        ChatComponentText line = null;
+        int countInLine = 0;
+        for (int i = 0; i < milestoneLevels.length; i++) {
+            int lvl = milestoneLevels[i];
+            dev.edtrick.nickhider.bedwars.BedwarsPrestige p = dev.edtrick.nickhider.bedwars.BedwarsPrestige.getByLevel(lvl);
+            if (countInLine == 0) {
+                line = new ChatComponentText("");
+            } else {
+                line.appendSibling(new ChatComponentText(" "));
+            }
+
+            ChatComponentText btn = new ChatComponentText(EnumChatFormatting.GRAY + "[" + EnumChatFormatting.WHITE + p.level + p.defaultIcon + EnumChatFormatting.GRAY + "]");
+            ChatStyle s = new ChatStyle();
+            s.setChatHoverEvent(new HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
+                    new ChatComponentText(
+                            EnumChatFormatting.GOLD + "Prestige Preset: " + EnumChatFormatting.WHITE + p.name + "\n"
+                            + EnumChatFormatting.GRAY + "Icon: " + EnumChatFormatting.WHITE + p.defaultIcon + "\n\n"
+                            + EnumChatFormatting.GREEN + "▶ Click to apply this icon preset"
+                    )
+            ));
+            s.setChatClickEvent(new ClickEvent(
+                    ClickEvent.Action.RUN_COMMAND,
+                    "/nickhider bwlvl icon " + p.level
+            ));
+            btn.setChatStyle(s);
+            line.appendSibling(btn);
+            countInLine++;
+
+            if (countInLine == 5 || i == milestoneLevels.length - 1) {
+                mc.thePlayer.addChatMessage(line);
+                countInLine = 0;
+            }
+        }
+    }
+
+    public static void printBwLvlStatus() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) return;
+
+        boolean enabled = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled();
+        int stars = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFakeStars();
+        int colorTier = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getColorPresetLevel();
+        String customIcon = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getCustomIcon();
+        String formattedTag = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag();
+
+        mc.thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.DARK_GRAY + "-----------------------------------------------------"));
+        mc.thePlayer.addChatMessage(new ChatComponentText(NickHiderMod.rainbowPrefix() + " " + EnumChatFormatting.GOLD + EnumChatFormatting.BOLD + "Bedwars Level Spoofing"));
+
+        // Status row
+        ChatComponentText statusRow = new ChatComponentText(EnumChatFormatting.GRAY + "Status: " + (enabled ? EnumChatFormatting.GREEN + "ENABLED " : EnumChatFormatting.RED + "DISABLED "));
+        ChatComponentText toggleBtn = new ChatComponentText(EnumChatFormatting.YELLOW + "[TOGGLE]");
+        ChatStyle toggleStyle = new ChatStyle();
+        toggleStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(EnumChatFormatting.YELLOW + "Click to toggle ON/OFF")));
+        toggleStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/nickhider bwlvl toggle"));
+        toggleBtn.setChatStyle(toggleStyle);
+        statusRow.appendSibling(toggleBtn);
+        mc.thePlayer.addChatMessage(statusRow);
+
+        // Fake stars row
+        ChatComponentText starsRow = new ChatComponentText(EnumChatFormatting.GRAY + "Fake Stars: " + EnumChatFormatting.WHITE + stars + " ");
+        ChatComponentText editStarsBtn = new ChatComponentText(EnumChatFormatting.AQUA + "[EDIT]");
+        ChatStyle editStarsStyle = new ChatStyle();
+        editStarsStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(EnumChatFormatting.AQUA + "Click to type star level")));
+        editStarsStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/nickhider bwlvl stars "));
+        editStarsBtn.setChatStyle(editStarsStyle);
+        starsRow.appendSibling(editStarsBtn);
+        mc.thePlayer.addChatMessage(starsRow);
+
+        // Color preset row
+        String colorDesc = (colorTier >= 0) ? (dev.edtrick.nickhider.bedwars.BedwarsPrestige.getByLevel(colorTier).name + " (" + colorTier + ")") : "Auto";
+        ChatComponentText colorRow = new ChatComponentText(EnumChatFormatting.GRAY + "Color Scheme: " + EnumChatFormatting.WHITE + colorDesc + " ");
+        ChatComponentText editColorBtn = new ChatComponentText(EnumChatFormatting.GOLD + "[CHANGE]");
+        ChatStyle editColorStyle = new ChatStyle();
+        editColorStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(EnumChatFormatting.GOLD + "Click to browse color schemes")));
+        editColorStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/nickhider bwlvl color"));
+        editColorBtn.setChatStyle(editColorStyle);
+        colorRow.appendSibling(editColorBtn);
+        mc.thePlayer.addChatMessage(colorRow);
+
+        // Star icon row
+        String iconDesc = (customIcon != null) ? customIcon : ("Auto (" + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getEffectiveIcon() + ")");
+        ChatComponentText iconRow = new ChatComponentText(EnumChatFormatting.GRAY + "Star Icon: " + EnumChatFormatting.WHITE + iconDesc + " ");
+        ChatComponentText editIconBtn = new ChatComponentText(EnumChatFormatting.LIGHT_PURPLE + "[CHANGE]");
+        ChatStyle editIconStyle = new ChatStyle();
+        editIconStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(EnumChatFormatting.LIGHT_PURPLE + "Click to browse star icons")));
+        editIconStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/nickhider bwlvl icon"));
+        editIconBtn.setChatStyle(editIconStyle);
+        iconRow.appendSibling(editIconBtn);
+        mc.thePlayer.addChatMessage(iconRow);
+
+        // Preview row
+        mc.thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY + "Tag Preview: " + formattedTag));
+
+        // Action row
+        ChatComponentText actionRow = new ChatComponentText(EnumChatFormatting.GRAY + "Quick Actions: ");
+        ChatComponentText resetBtn = new ChatComponentText(EnumChatFormatting.RED + "[RESET ALL]");
+        ChatStyle resetStyle = new ChatStyle();
+        resetStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(EnumChatFormatting.RED + "Click to reset Bedwars spoofing to defaults")));
+        resetStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/nickhider bwlvl reset"));
+        resetBtn.setChatStyle(resetStyle);
+        actionRow.appendSibling(resetBtn);
+        mc.thePlayer.addChatMessage(actionRow);
+
+        mc.thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.DARK_GRAY + "-----------------------------------------------------"));
+    }
+
     private static void scheduleOnMain(Runnable task) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc != null) {
@@ -224,6 +589,18 @@ public class NickHiderCommand {
 
         sendCommandHelp("6", "/nickhider realskin", "/nickhider realskin",
                 "Resets your skin back to your real account skin\nimmediately without reconnecting.");
+
+        sendCommandHelp("7", "/nickhider bwlvl", "/nickhider bwlvl",
+                "Opens the Hypixel Bedwars level spoofing control panel\nwith clickable buttons for stars, colors and icons.");
+
+        sendCommandHelp("8", "/nickhider bwlvl stars <LVL>", "/nickhider bwlvl stars ",
+                "Sets your spoofed Bedwars stars (0 - 10000).\nLeave blank to show stars configuration help.");
+
+        sendCommandHelp("9", "/nickhider bwlvl color", "/nickhider bwlvl color",
+                "Opens a clickable chat menu with all 101 prestige color\nschemes formatted 5 per line to select from.");
+
+        sendCommandHelp("10", "/nickhider bwlvl icon", "/nickhider bwlvl icon",
+                "Opens a clickable chat menu to choose your star icon\n(✫, ✪, ⚝, ✥, ✭) or prestige preset.");
     }
 
     private static void sendCommandHelp(String num, String usage, String suggestCommand, String hoverDescription) {
@@ -264,13 +641,25 @@ public class NickHiderCommand {
                 return new String[]{"/nickhider"};
             }
         }
+        if (lower.startsWith("/bw") && !leftOfCursor.contains(" ")) {
+            if ("/bwlvl".startsWith(lower)) {
+                return new String[]{"/bwlvl"};
+            }
+        }
 
-        // Autocomplete subcommands: "/nickhider " or "/nick "
-        if (lower.startsWith("/nickhider ") || lower.startsWith("/nick ")) {
-            boolean isNickhider = lower.startsWith("/nickhider ");
-            String afterCmd = leftOfCursor.substring(isNickhider ? "/nickhider ".length() : "/nick ".length());
+        // Autocomplete subcommands: "/nickhider ", "/nick ", or "/bwlvl "
+        if (lower.startsWith("/nickhider ") || lower.startsWith("/nick ") || lower.startsWith("/bwlvl ") || lower.startsWith("/bedwars ")) {
+            int prefixLen = "/nickhider ".length();
+            if (lower.startsWith("/nick ")) prefixLen = "/nick ".length();
+            else if (lower.startsWith("/bwlvl ")) prefixLen = "/bwlvl ".length();
+            else if (lower.startsWith("/bedwars ")) prefixLen = "/bedwars ".length();
 
-            String[] subcommands = new String[]{"nick", "skin", "unnick", "realskin"};
+            String afterCmd = leftOfCursor.substring(prefixLen);
+
+            String[] subcommands = new String[]{"nick", "skin", "unnick", "realskin", "bwlvl"};
+            if (lower.startsWith("/bwlvl ") || lower.startsWith("/bedwars ")) {
+                subcommands = new String[]{"stars", "color", "icon", "toggle", "on", "off", "reset", "status"};
+            }
 
             if (!afterCmd.contains(" ")) {
                 String subLower = afterCmd.toLowerCase();
@@ -282,7 +671,6 @@ public class NickHiderCommand {
                 }
                 return list.toArray(new String[0]);
             } else {
-                // If sub is skin, autocomplete online players
                 String[] parts = afterCmd.split("\\s+", 2);
                 String sub = parts[0].toLowerCase();
                 String currentArg = parts.length > 1 ? parts[1].toLowerCase() : "";
@@ -303,6 +691,39 @@ public class NickHiderCommand {
                         }
                     } catch (Exception ignored) {}
                     return list.toArray(new String[0]);
+                } else if (sub.equals("bwlvl") || sub.equals("bedwars")) {
+                    String[] bwSubcommands = new String[]{"stars", "color", "icon", "toggle", "on", "off", "reset", "status"};
+                    if (!parts[1].contains(" ")) {
+                        List<String> list = new ArrayList<>();
+                        for (String bwSub : bwSubcommands) {
+                            if (bwSub.startsWith(currentArg)) {
+                                list.add(bwSub);
+                            }
+                        }
+                        return list.toArray(new String[0]);
+                    } else {
+                        String[] bwParts = parts[1].split("\\s+", 2);
+                        String bwAction = bwParts[0].toLowerCase();
+                        String bwArg = bwParts.length > 1 ? bwParts[1].toLowerCase() : "";
+
+                        if (bwAction.equals("color")) {
+                            List<String> list = new ArrayList<>();
+                            list.add("auto");
+                            for (dev.edtrick.nickhider.bedwars.BedwarsPrestige p : dev.edtrick.nickhider.bedwars.BedwarsPrestige.getAllPrestiges()) {
+                                String lvlStr = String.valueOf(p.level);
+                                if (lvlStr.startsWith(bwArg)) list.add(lvlStr);
+                                if (p.name.toLowerCase().startsWith(bwArg)) list.add(p.name);
+                            }
+                            return list.toArray(new String[0]);
+                        } else if (bwAction.equals("icon")) {
+                            List<String> list = new ArrayList<>();
+                            String[] icons = new String[]{"auto", "✫", "✪", "⚝", "✥", "✭", "0", "1000", "2000", "3000", "4000"};
+                            for (String ic : icons) {
+                                if (ic.toLowerCase().startsWith(bwArg)) list.add(ic);
+                            }
+                            return list.toArray(new String[0]);
+                        }
+                    }
                 }
             }
         }

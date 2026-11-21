@@ -8,16 +8,18 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(ScorePlayerTeam.class)
+@Mixin(value = ScorePlayerTeam.class, priority = 999999)
 public class MixinScorePlayerTeam {
 
     @Inject(method = "formatPlayerName", at = @At("RETURN"), cancellable = true)
     private static void nickhider_formatPlayerName(Team teamIn, String playersName, CallbackInfoReturnable<String> cir) {
         String ret = cir.getReturnValue();
         if (ret != null) {
-            String filtered = NickHiderMod.filterString(ret);
-            if (!ret.equals(filtered)) {
-                cir.setReturnValue(filtered);
+            boolean isLocal = NickHiderMod.isLocalPlayerName(playersName);
+            ret = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterTeamPlayerName(ret, isLocal);
+            ret = NickHiderMod.filterString(ret);
+            if (ret != null && !ret.equals(cir.getReturnValue())) {
+                cir.setReturnValue(ret);
             }
         }
     }

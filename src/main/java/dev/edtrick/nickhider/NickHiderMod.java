@@ -173,6 +173,13 @@ public class NickHiderMod implements ClientModInitializer {
         if (fakeSkinSignature != null) prop.setProperty("fakeSkinSignature", fakeSkinSignature);
         if (fakeSkinOwner != null) prop.setProperty("fakeSkinOwner", fakeSkinOwner);
 
+        prop.setProperty("enableBwLevel", String.valueOf(dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()));
+        prop.setProperty("bwStars", String.valueOf(dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFakeStars()));
+        prop.setProperty("bwColorPreset", String.valueOf(dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getColorPresetLevel()));
+        if (dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getCustomIcon() != null) {
+            prop.setProperty("bwIconPreset", dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getCustomIcon());
+        }
+
         try (OutputStream os = Files.newOutputStream(configFile)) {
             prop.store(os, "NickHider Mod Configuration");
         } catch (IOException e) {
@@ -189,6 +196,21 @@ public class NickHiderMod implements ClientModInitializer {
             fakeSkinValue     = prop.getProperty("fakeSkinValue", null);
             fakeSkinSignature = prop.getProperty("fakeSkinSignature", null);
             fakeSkinOwner     = prop.getProperty("fakeSkinOwner", null);
+
+            String enBw = prop.getProperty("enableBwLevel", "false");
+            boolean en = Boolean.parseBoolean(enBw);
+            String starsStr = prop.getProperty("bwStars", "1402");
+            int st = 1402;
+            try {
+                st = Integer.parseInt(starsStr);
+            } catch (NumberFormatException ignored) {}
+            String colorStr = prop.getProperty("bwColorPreset", "-1");
+            int col = -1;
+            try {
+                col = Integer.parseInt(colorStr);
+            } catch (NumberFormatException ignored) {}
+            String ic = prop.getProperty("bwIconPreset", null);
+            dev.edtrick.nickhider.bedwars.BedwarsLevelManager.loadValues(en, st, col, ic);
         } catch (IOException e) {
             LOGGER.error("[NickHider] Failed to load config", e);
         }
@@ -303,8 +325,43 @@ public class NickHiderMod implements ClientModInitializer {
         return false;
     }
 
+    public static boolean isLocalPlayerName(String name) {
+        if (name == null || name.isEmpty()) return false;
+        for (String n : getNamesToReplace()) {
+            if (n.equalsIgnoreCase(name)) return true;
+        }
+        return false;
+    }
+
+    public static boolean isLocalPlayerEntity(net.minecraft.entity.Entity entity) {
+        if (entity == null) return false;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null) return false;
+        if (entity == mc.thePlayer) return true;
+        if (entity instanceof net.minecraft.entity.player.EntityPlayer) {
+            return isLocalPlayerProfile(((net.minecraft.entity.player.EntityPlayer) entity).getGameProfile());
+        }
+        return false;
+    }
+
+    public static boolean containsLocalPlayerName(String text) {
+        if (text == null) return false;
+        String stripped = stripColorCodes(text).toLowerCase();
+        for (String name : getNamesToReplace()) {
+            if (name != null && !name.isEmpty() && stripped.contains(name.toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String filterString(String text) {
         if (text == null) return null;
+
+        if (dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) {
+            text = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterGeneralString(text);
+        }
+
         if (fakeNick == null) return text;
 
         java.util.List<String> names = getNamesToReplace();
@@ -348,7 +405,7 @@ public class NickHiderMod implements ClientModInitializer {
 
     public static IChatComponent filterComponent(IChatComponent component) {
         if (component == null) return null;
-        if (fakeNick == null) return component;
+        if (fakeNick == null && !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) return component;
 
         try {
             return filterComponentRecursive(component);

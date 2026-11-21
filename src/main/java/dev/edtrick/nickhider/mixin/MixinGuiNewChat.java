@@ -40,6 +40,7 @@ public class MixinGuiNewChat {
                     }
                 }
             }
+            message = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterChat(message);
         }
         return NickHiderMod.filterText(message);
     }
