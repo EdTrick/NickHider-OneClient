@@ -42,6 +42,15 @@ public class MixinNetworkPlayerInfo {
         }
     }
 
+    @Inject(method = "hasLocationSkin", at = @At("HEAD"), cancellable = true)
+    private void nickhider_tabHasLocationSkin(CallbackInfoReturnable<Boolean> cir) {
+        if (isLocalPlayer()) {
+            if (NickHiderMod.getFakeSkinLocation() != null) {
+                cir.setReturnValue(true);
+            }
+        }
+    }
+
     @Inject(method = "loadPlayerTextures", at = @At("HEAD"))
     private void nickhider_loadPlayerTextures(CallbackInfo ci) {
         if (!isLocalPlayer()) return;
@@ -84,24 +93,7 @@ public class MixinNetworkPlayerInfo {
     }
 
     private boolean isLocalPlayer() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || gameProfile == null) return false;
-
-        if (mc.thePlayer != null) {
-            if (mc.thePlayer.getUniqueID() != null && mc.thePlayer.getUniqueID().equals(gameProfile.getId())) return true;
-            if (mc.thePlayer.getName() != null && mc.thePlayer.getName().equalsIgnoreCase(gameProfile.getName())) return true;
-        }
-
-        if (mc.getSession() != null) {
-            if (mc.getSession().getProfile() != null && mc.getSession().getProfile().getId() != null) {
-                if (mc.getSession().getProfile().getId().equals(gameProfile.getId())) return true;
-            }
-            String realName = mc.getSession().getUsername();
-            if (realName != null && realName.equalsIgnoreCase(gameProfile.getName())) return true;
-        }
-
-        if (gameProfile.getName() != null && NickHiderMod.getNamesToReplace().contains(gameProfile.getName())) return true;
-
-        return false;
+        if (gameProfile == null) return false;
+        return NickHiderMod.isLocalPlayerProfile(gameProfile);
     }
 }

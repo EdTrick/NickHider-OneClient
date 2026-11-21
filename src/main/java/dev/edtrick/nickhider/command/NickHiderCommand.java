@@ -11,6 +11,7 @@ import net.minecraft.event.HoverEvent;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatStyle;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,6 +92,16 @@ public class NickHiderCommand {
                 handleRealSkin();
                 return true;
 
+            case "servernick":
+            case "snick":
+                handleServerNick(args);
+                return true;
+
+            case "replay":
+            case "replaynick":
+                handleReplay(args);
+                return true;
+
             case "bwlvl":
             case "bedwars":
                 handleBwLvl(args);
@@ -131,6 +142,71 @@ public class NickHiderCommand {
             NickHiderMod.sendMessage("§7No fake nick active. Using real IGN: §f§l" + realName);
         } else {
             NickHiderMod.sendMessage("§7Current fake nick: " + current);
+        }
+    }
+
+    public static void handleServerNick(String input) {
+        if (input == null || input.isEmpty()) {
+            String current = NickHiderMod.getDetectedChatNick();
+            if (current != null) {
+                NickHiderMod.sendMessage("§7Current server-side nick: §b" + current);
+            } else {
+                NickHiderMod.sendMessage("§7No server-side nick currently detected. (Auto-detected when chatting or via Hypixel /nick).");
+            }
+            return;
+        }
+        if (input.equalsIgnoreCase("reset") || input.equalsIgnoreCase("clear")) {
+            NickHiderMod.setDetectedChatNick(null);
+            invalidateSkinCache();
+            NickHiderMod.sendMessage("§aServer-side nick cleared.");
+            return;
+        }
+        String clean = NickHiderMod.stripColorCodes(input).trim();
+        NickHiderMod.setDetectedChatNick(clean);
+        invalidateSkinCache();
+        NickHiderMod.sendMessage("§aServer-side nick set to: §b" + clean);
+    }
+
+    public static void handleReplay(String arg) {
+        if (!arg.isEmpty()) {
+            handleServerNick(arg);
+            return;
+        }
+
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.theWorld == null) {
+            NickHiderMod.sendMessage("§cError: You must be in a world to view replay players.");
+            return;
+        }
+
+        List<String> playerNames = new ArrayList<String>();
+        for (net.minecraft.entity.player.EntityPlayer p : mc.theWorld.playerEntities) {
+            if (p != null && p != mc.thePlayer) {
+                String pName = p.getName();
+                if (pName != null && !pName.isEmpty() && !playerNames.contains(pName)) {
+                    playerNames.add(pName);
+                }
+            }
+        }
+
+        if (playerNames.isEmpty()) {
+            NickHiderMod.sendMessage("§7No other players found in the current world / replay.");
+            return;
+        }
+
+        NickHiderMod.sendMessage("§6Players found in this world / replay (click to set as your nick):");
+        ChatComponentText line = new ChatComponentText("");
+        for (String pName : playerNames) {
+            ChatComponentText btn = new ChatComponentText("§b[" + pName + "] ");
+            ChatStyle style = new ChatStyle();
+            style.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/nickhider replay " + pName));
+            style.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                    new ChatComponentText("§eClick to set your server nick to §b" + pName)));
+            btn.setChatStyle(style);
+            line.appendSibling(btn);
+        }
+        if (mc.thePlayer != null) {
+            mc.thePlayer.addChatMessage(line);
         }
     }
 
@@ -601,6 +677,12 @@ public class NickHiderCommand {
 
         sendCommandHelp("10", "/nickhider bwlvl icon", "/nickhider bwlvl icon",
                 "Opens a clickable chat menu to choose your star icon\n(✫, ✪, ⚝, ✥, ✭) or prestige preset.");
+
+        sendCommandHelp("11", "/nickhider servernick [NICK]", "/nickhider servernick ",
+                "Shows or sets your server-side nick (/nick on Hypixel).\nAuto-detected when chatting or via /nick notifications.");
+
+        sendCommandHelp("12", "/nickhider replay [NICK]", "/nickhider replay",
+                "Shows clickable list of replay players to select who you are,\nor sets your replay player name.");
     }
 
     private static void sendCommandHelp(String num, String usage, String suggestCommand, String hoverDescription) {
@@ -762,6 +844,20 @@ public class NickHiderCommand {
                     }
                 }
             }
+
+            // Also check all player entities in the world (e.g. EntityOtherPlayerMP in replays)
+            if (mc.theWorld != null && mc.theWorld.playerEntities != null) {
+                for (net.minecraft.entity.player.EntityPlayer p : mc.theWorld.playerEntities) {
+                    if (p != null && NickHiderMod.isLocalPlayerEntity(p)) {
+                        if (mc.getNetHandler() != null && p.getUniqueID() != null) {
+                            NetworkPlayerInfo info = mc.getNetHandler().getPlayerInfo(p.getUniqueID());
+                            if (info != null) {
+                                applySkinToInfo(info);
+                            }
+                        }
+                    }
+                }
+            }
         } catch (Exception e) {
             NickHiderMod.LOGGER.warn("[NickHider] Could not refresh player list skin textures: {}", e.getMessage());
         }
@@ -785,29 +881,17 @@ public class NickHiderCommand {
             }
 
             NetworkPlayerInfoAccessor accessor = (NetworkPlayerInfoAccessor) info;
-            accessor.setLocationSkin(NickHiderMod.getFakeSkinLocation());
+            ResourceLocation fakeSkin = NickHiderMod.getFakeSkinLocation();
+            if (fakeSkin != null) {
+                accessor.setLocationSkin(fakeSkin);
+            }
             accessor.setPlayerTexturesLoaded(false);
             accessor.invokeLoadPlayerTextures();
         } catch (Throwable ignored) {}
     }
 
     private static boolean isLocalInfo(NetworkPlayerInfo info) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || info == null || info.getGameProfile() == null) return false;
-
-        if (mc.thePlayer != null) {
-            if (mc.thePlayer.getUniqueID() != null && mc.thePlayer.getUniqueID().equals(info.getGameProfile().getId())) return true;
-            if (mc.thePlayer.getName() != null && mc.thePlayer.getName().equalsIgnoreCase(info.getGameProfile().getName())) return true;
-        }
-
-        if (mc.getSession() != null) {
-            if (mc.getSession().getProfile() != null && mc.getSession().getProfile().getId() != null) {
-                if (mc.getSession().getProfile().getId().equals(info.getGameProfile().getId())) return true;
-            }
-            String realName = mc.getSession().getUsername();
-            if (realName != null && realName.equalsIgnoreCase(info.getGameProfile().getName())) return true;
-        }
-
-        return false;
+        if (info == null || info.getGameProfile() == null) return false;
+        return NickHiderMod.isLocalPlayerProfile(info.getGameProfile());
     }
 }

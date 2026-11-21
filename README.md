@@ -30,6 +30,7 @@ Hide your real username, spoof any skin on-the-fly, conceal server-side `/nick` 
   - [4. OneConfig & OneClient UI Support](#4-oneconfig--oneclient-ui-support)
   - [5. Interactive In-Game Commands & Autocompletion](#5-interactive-in-game-commands--autocompletion)
   - [6. Hypixel Bedwars Stars & Level Spoofing](#6-hypixel-bedwars-stars--level-spoofing)
+  - [7. Server-Side /nick & Hypixel Replay Support](#7-server-side-nick--hypixel-replay-support)
 - [📸 Screenshots & Showcase](#-screenshots--showcase)
 - [⌨️ Commands Reference](#️-commands-reference)
 - [⚙️ Configuration](#️-configuration)
@@ -59,7 +60,10 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
   - 📜 **Holograms & Leaderboards**
   - 🎬 **Titles, Subtitles & Actionbars** (e.g. victory and win banners)
   - 🗂️ **Item Tooltips & Inventories**
-- **Full Color & Style Code Support:** Custom nicknames support standard Minecraft color formatting (`&0` - `&f`) and styles (`&l` bold, `&o` italic, `&n` underline, etc.). Example: `&6&lEdTrick` or `&eE&bd&aTrick`.
+  - ⚔️ **Hotbar Experience (XP) Bar** (dynamically spoofed inside Bedwars matches)
+  - 👤 **Lobby Profile NPCs** (e.g. "Your Bed Wars Profile", "Your SkyWars Profile")
+  - 📼 **Hypixel Replay Mode** (full disguise for your replay entity)
+- **Full Color & Style Code Support:** Custom nicknames support standard Minecraft color formatting (`&0` - `&f`) and styles (`&l` bold, `&o` italic, `&n` underline, etc.). Example: `&6&lEdTrick` or `&eE&bd&aTrick`. Color and formatting codes are preserved even when server announcements or game modes add their own styles.
 - **Dynamic Server Nick Detection:** If you play on servers with their own `/nick` system (such as Hypixel, Minemen Club, etc.), NickHider automatically detects your randomized server nick and replaces it with your chosen fake nick everywhere.
 - **Smart Preservation:** Does not break team prefixes, health icons, scoreboard points, or server ranks.
 
@@ -107,8 +111,9 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
 - **Mix & Match Customization:** Combine any star level with any prestige color palette and any star icon (e.g. `/nickhider bwlvl stars 1402`, `/nickhider bwlvl color 1200`, `/nickhider bwlvl icon 2000` -> `§7[§e1402§6⚝§7]`).
 - **Universal Multi-Display Spoofing:**
   - 💬 **Chat Messages** (incoming and outgoing messages featuring your player)
-  - 📋 **Tablist & Player Names**
+  - 📋 **Tablist & Player Names** (overrides tablist stars and external star indicator mods)
   - 📊 **Sidebar Scoreboard** (including `Stars: X` lines and player team rows)
+  - ⚔️ **Hotbar Experience (XP) Bar** (accurately replaces Bedwars level inside active matches without touching Hypixel Network level in lobbies)
   - 🎬 **Actionbar & Middle-Screen Display** (text above your hotbar/inventory)
   - 🏷️ **Nametags, Titles, Subtitles & Holograms**
 - **Interactive Chat Selection Menus:**
@@ -117,6 +122,22 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
 - **OneConfig Support:** Configurable via **Visuals ➔ NickHider ➔ Bedwars Level** in the OneConfig menu.
 
 <img src="./images/12.png" alt="Bedwars Level Spoofing" width="720" />
+
+---
+
+### 7. Server-Side /nick & Hypixel Replay Support
+- **Automatic Server-Side Nick Disguise:**
+  - When playing on Hypixel or servers with `/nick`, NickHider automatically detects your server-assigned randomized nick when chatting or from Hypixel's `/nick` messages.
+  - Replaces the randomized nick with your chosen fake nick everywhere, keeping all formatting, rank colors, and game mode announcements (e.g. Murder Mystery announcements, Bedwars shout, etc.) intact.
+  - Manual override available at any time via `/nickhider servernick [NICK]` (alias: `/nickhider snick`), or clear with `/nickhider servernick reset`.
+- **Lobby Profile NPC Disguise:**
+  - Cloned profile NPCs in lobbies (such as the Bedwars "Your Bed Wars Profile" NPC) that replicate your real account skin are automatically recognized and disguised with your custom fake skin and spoofed Bedwars stats.
+- **Hypixel Replay Mode (`/nickhider replay`):**
+  - In Hypixel replays, your character is loaded as a separate player entity (`EntityOtherPlayerMP`) with a randomized nick and skin.
+  - Running `/nickhider replay` prints a clickable chat list of all players in the replay; clicking your replay identity instantly applies your custom fake nick and skin to your replay character.
+  - Can also be set directly with `/nickhider replay [NICK]` (alias: `/nickhider replaynick`).
+
+<img src="./images/13.png" alt="Hypixel Replay & Lobby Profile NPC Disguise" width="720" />
 
 ---
 
@@ -131,6 +152,9 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
 | **Inventory & Player Skulls** | <img src="./images/10.png" alt="Inventory Spoof" /> |
 | **OneConfig Menu Interface** | <img src="./images/4.png" alt="OneConfig Support" /> |
 | **OneClient Sidebar** | <img src="./images/11.png" alt="OneClient Profile Spoof" /> |
+| **Bedwars Level & In-Game XP** | <img src="./images/12.png" alt="Bedwars Level Spoofing" /> |
+| **Lobby Profile NPC Disguise** | <img src="./images/13.png" alt="Lobby Profile NPC Disguise" /> |
+| **Hypixel Replay Mode** | <img src="./images/14.png" alt="Hypixel Replay Disguise" /> |
 
 ---
 
@@ -144,6 +168,8 @@ You can use `/nickhider`:
 | `/nickhider unnick` | Resets nickname back to your real account name | `/nickhider unnick` |
 | `/nickhider skin <player>` | Sets your client-side skin to any Minecraft player's skin | `/nickhider skin Kolijn` |
 | `/nickhider realskin` | Resets skin back to your real account skin | `/nickhider realskin` |
+| `/nickhider servernick [nick]` | Shows, sets, or clears (`reset`) your server-side `/nick` | `/nickhider servernick SpookyAndCute` |
+| `/nickhider replay [nick]` | Interactive player selector for Hypixel replays or sets replay nick | `/nickhider replay` |
 | `/nickhider bwlvl` | Displays Bedwars level spoofing control panel & status | `/nickhider bwlvl` |
 | `/nickhider bwlvl stars <lvl>` | Sets fake Bedwars stars level (0 - 10000) | `/nickhider bwlvl stars 1402` |
 | `/nickhider bwlvl color [preset]`| Opens prestige color menu or sets a color scheme | `/nickhider bwlvl color 1200` |
@@ -151,6 +177,12 @@ You can use `/nickhider`:
 | `/nickhider bwlvl toggle` | Toggles Bedwars level spoofing ON or OFF | `/nickhider bwlvl toggle` |
 | `/nickhider bwlvl reset` | Resets Bedwars spoofing back to default settings | `/nickhider bwlvl reset` |
 | `/nickhider help` | Displays the interactive command help menu | `/nickhider help` |
+
+> [!NOTE]
+> **Command Aliases:**
+> - `/nickhider servernick` ➔ `/nickhider snick`
+> - `/nickhider replay` ➔ `/nickhider replaynick`
+> - `/nickhider bwlvl` ➔ `/nickhider bedwars`
 
 > [!TIP]
 > You can click on any command in the `/nickhider help` chat message to auto-fill it directly into your chat bar!
@@ -211,7 +243,7 @@ To compile the mod from source code:
      ./gradlew build
      ```
 
-3. The finished `.jar` file will be located in `build/libs/nickhider-1.1.0.jar`.
+3. The finished `.jar` file will be located in `build/libs/nickhider-1.1.1.jar`.
 
 ---
 

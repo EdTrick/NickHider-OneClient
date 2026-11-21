@@ -19,8 +19,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -45,6 +47,7 @@ public class NickHiderMod implements ClientModInitializer {
 
     // Real account skin property captured from the server
     private static Property realSkinProperty = null;
+    private static String realSkinUrl = null;
     private static boolean realSkinCaptured = false;
 
     private static Path configFile;
@@ -159,7 +162,20 @@ public class NickHiderMod implements ClientModInitializer {
     public static void setRealSkinProperty(Property property) {
         realSkinProperty = property;
         realSkinCaptured = true;
+        if (property != null && property.getValue() != null) {
+            try {
+                byte[] decoded = Base64.getDecoder().decode(property.getValue());
+                String json = new String(decoded, StandardCharsets.UTF_8);
+                String url = extractJsonString(json, "url");
+                if (url != null && !url.isEmpty()) {
+                    realSkinUrl = url;
+                }
+            } catch (Exception ignored) {}
+        }
+        saveConfig();
     }
+
+    public static String getRealSkinUrl() { return realSkinUrl; }
 
     public static boolean isRealSkinCaptured() { return realSkinCaptured; }
 
@@ -172,6 +188,9 @@ public class NickHiderMod implements ClientModInitializer {
         if (fakeSkinValue != null) prop.setProperty("fakeSkinValue", fakeSkinValue);
         if (fakeSkinSignature != null) prop.setProperty("fakeSkinSignature", fakeSkinSignature);
         if (fakeSkinOwner != null) prop.setProperty("fakeSkinOwner", fakeSkinOwner);
+        if (detectedChatNick != null) prop.setProperty("serverNick", detectedChatNick);
+        if (realSkinUrl != null) prop.setProperty("realSkinUrl", realSkinUrl);
+        if (realSkinProperty != null && realSkinProperty.getValue() != null) prop.setProperty("realSkinValue", realSkinProperty.getValue());
 
         prop.setProperty("enableBwLevel", String.valueOf(dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()));
         prop.setProperty("bwStars", String.valueOf(dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFakeStars()));
@@ -196,6 +215,16 @@ public class NickHiderMod implements ClientModInitializer {
             fakeSkinValue     = prop.getProperty("fakeSkinValue", null);
             fakeSkinSignature = prop.getProperty("fakeSkinSignature", null);
             fakeSkinOwner     = prop.getProperty("fakeSkinOwner", null);
+            detectedChatNick  = prop.getProperty("serverNick", null);
+            realSkinUrl       = prop.getProperty("realSkinUrl", null);
+            String savedRealSkinValue = prop.getProperty("realSkinValue", null);
+            if (savedRealSkinValue != null && !savedRealSkinValue.isEmpty()) {
+                realSkinProperty = new Property("textures", savedRealSkinValue, "");
+                realSkinCaptured = true;
+            }
+            if (realSkinUrl != null) {
+                realSkinCaptured = true;
+            }
 
             String enBw = prop.getProperty("enableBwLevel", "false");
             boolean en = Boolean.parseBoolean(enBw);
@@ -219,9 +248,37 @@ public class NickHiderMod implements ClientModInitializer {
     // ─── String Replacement Engine ───────────────────────────────────────────
 
     private static String detectedChatNick = null;
+    private static String lastSentChatMessage = null;
+    private static long lastSentChatTime = 0;
+
+    public static void recordSentChatMessage(String message) {
+        lastSentChatMessage = message;
+        lastSentChatTime = System.currentTimeMillis();
+    }
+
+    public static String getLastSentChatMessage() {
+        return lastSentChatMessage;
+    }
+
+    public static long getLastSentChatTime() {
+        return lastSentChatTime;
+    }
 
     public static void setDetectedChatNick(String nick) {
+        if (nick != null && nick.equalsIgnoreCase(fakeNick)) return;
+        if (nick != null && nick.isEmpty()) nick = null;
+        boolean changed = (detectedChatNick == null) ? (nick != null) : !detectedChatNick.equals(nick);
         detectedChatNick = nick;
+        if (changed) {
+            saveConfig();
+            OneConfigCompat.sync();
+            if (nick != null) {
+                LOGGER.info("[NickHider] Server-side nickname updated: '{}'", nick);
+            }
+        }
+        try {
+            dev.edtrick.nickhider.command.NickHiderCommand.invalidateSkinCache();
+        } catch (Throwable ignored) {}
     }
 
     public static String getDetectedChatNick() {
@@ -303,32 +360,69 @@ public class NickHiderMod implements ClientModInitializer {
 
         // 2. Check Name against all names to replace (real IGN, thePlayer name, server nick, chat nick)
         String profileName = profile.getName();
-        if (profileName != null && !profileName.isEmpty()) {
-            for (String name : getNamesToReplace()) {
-                if (profileName.equalsIgnoreCase(name)) {
-                    return true;
-                }
+        if (profileName != null && isLocalPlayerName(profileName)) {
+            return true;
+        }
+
+        // 3. Check textures property against realSkinProperty or realSkinUrl if available
+        if (checkSkinPropertyMatch(profile.getProperties())) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static boolean checkSkinPropertyMatch(com.mojang.authlib.properties.PropertyMap properties) {
+        if (properties == null || !properties.containsKey("textures")) return false;
+        for (Property p : properties.get("textures")) {
+            if (p == null || p.getValue() == null) continue;
+            if (realSkinProperty != null && p.getValue().equals(realSkinProperty.getValue())) {
+                return true;
+            }
+            if (realSkinUrl != null) {
+                try {
+                    byte[] decoded = Base64.getDecoder().decode(p.getValue());
+                    String json = new String(decoded, StandardCharsets.UTF_8);
+                    if (json.contains(realSkinUrl)) {
+                        return true;
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+        return false;
+    }
+
+    public static boolean matchesRealSkin(net.minecraft.client.entity.AbstractClientPlayer player) {
+        if (player == null) return false;
+        if (realSkinProperty == null && realSkinUrl == null) return false;
+
+        if (player.getGameProfile() != null && player.getGameProfile().getProperties() != null) {
+            if (checkSkinPropertyMatch(player.getGameProfile().getProperties())) {
+                return true;
             }
         }
 
-        // 3. Check textures property against realSkinProperty if available
-        if (realSkinProperty != null && realSkinProperty.getValue() != null && profile.getProperties() != null) {
-            if (profile.getProperties().containsKey("textures")) {
-                for (Property prop : profile.getProperties().get("textures")) {
-                    if (prop != null && realSkinProperty.getValue().equals(prop.getValue())) {
+        try {
+            Minecraft mc = Minecraft.getMinecraft();
+            if (mc != null && mc.getNetHandler() != null && player.getUniqueID() != null) {
+                net.minecraft.client.network.NetworkPlayerInfo info = mc.getNetHandler().getPlayerInfo(player.getUniqueID());
+                if (info != null && info.getGameProfile() != null && info.getGameProfile().getProperties() != null) {
+                    if (checkSkinPropertyMatch(info.getGameProfile().getProperties())) {
                         return true;
                     }
                 }
             }
-        }
+        } catch (Throwable ignored) {}
 
         return false;
     }
 
     public static boolean isLocalPlayerName(String name) {
         if (name == null || name.isEmpty()) return false;
+        String clean = stripColorCodes(name).trim();
+        if (clean.isEmpty()) return false;
         for (String n : getNamesToReplace()) {
-            if (n.equalsIgnoreCase(name)) return true;
+            if (n != null && (n.equalsIgnoreCase(clean) || n.equalsIgnoreCase(name))) return true;
         }
         return false;
     }
@@ -339,7 +433,14 @@ public class NickHiderMod implements ClientModInitializer {
         if (mc == null) return false;
         if (entity == mc.thePlayer) return true;
         if (entity instanceof net.minecraft.entity.player.EntityPlayer) {
-            return isLocalPlayerProfile(((net.minecraft.entity.player.EntityPlayer) entity).getGameProfile());
+            net.minecraft.entity.player.EntityPlayer p = (net.minecraft.entity.player.EntityPlayer) entity;
+            String name = p.getName();
+            if (isLocalPlayerName(name)) return true;
+            if (p.hasCustomName() && isLocalPlayerName(p.getCustomNameTag())) return true;
+            if (isLocalPlayerProfile(p.getGameProfile())) return true;
+            if (p instanceof net.minecraft.client.entity.AbstractClientPlayer) {
+                if (matchesRealSkin((net.minecraft.client.entity.AbstractClientPlayer) p)) return true;
+            }
         }
         return false;
     }
@@ -355,6 +456,136 @@ public class NickHiderMod implements ClientModInitializer {
         return false;
     }
 
+    public static String getActiveFormattingAt(String text, int index) {
+        if (text == null || index <= 0) return "";
+        int bound = Math.min(index, text.length());
+        String sub = text.substring(0, bound);
+        StringBuilder currentFormat = new StringBuilder();
+
+        for (int i = 0; i < sub.length() - 1; i++) {
+            if (sub.charAt(i) == '§') {
+                char code = Character.toLowerCase(sub.charAt(i + 1));
+                if ("0123456789abcdef".indexOf(code) >= 0) {
+                    currentFormat.setLength(0);
+                    currentFormat.append('§').append(code);
+                } else if ("klmno".indexOf(code) >= 0) {
+                    currentFormat.append('§').append(code);
+                } else if (code == 'r') {
+                    currentFormat.setLength(0);
+                }
+                i++;
+            }
+        }
+        return currentFormat.toString();
+    }
+
+    public static List<String> extractCharFormats(String matched, String activeBefore) {
+        List<String> formats = new ArrayList<String>();
+        StringBuilder current = new StringBuilder(activeBefore != null ? activeBefore : "");
+        for (int i = 0; i < matched.length(); i++) {
+            char c = matched.charAt(i);
+            if (c == '§' && i + 1 < matched.length()) {
+                char code = Character.toLowerCase(matched.charAt(i + 1));
+                if ("0123456789abcdef".indexOf(code) >= 0) {
+                    current.setLength(0);
+                    current.append('§').append(code);
+                } else if ("klmno".indexOf(code) >= 0) {
+                    current.append('§').append(code);
+                } else if (code == 'r') {
+                    current.setLength(0);
+                }
+                i++;
+            } else {
+                formats.add(current.toString());
+            }
+        }
+        return formats;
+    }
+
+    public static boolean hasMultipleFormats(List<String> formats) {
+        if (formats == null || formats.size() < 2) return false;
+        String first = formats.get(0);
+        for (int i = 1; i < formats.size(); i++) {
+            if (!formats.get(i).equalsIgnoreCase(first)) return true;
+        }
+        return false;
+    }
+
+    public static String buildRainbowString(String text, List<String> formats, String activeAfter) {
+        if (text == null || text.isEmpty()) return "";
+        if (formats == null || formats.isEmpty()) return text;
+        StringBuilder sb = new StringBuilder();
+        int fCount = formats.size();
+        for (int i = 0; i < text.length(); i++) {
+            int fIdx = i * fCount / text.length();
+            if (fIdx >= fCount) fIdx = fCount - 1;
+            sb.append(formats.get(fIdx)).append(text.charAt(i));
+        }
+        if (activeAfter != null && !activeAfter.isEmpty()) {
+            sb.append("§r").append(activeAfter);
+        }
+        return sb.toString();
+    }
+
+    public static String replaceNickInText(String text, String nameToReplace, String replacement) {
+        if (text == null || nameToReplace == null || nameToReplace.isEmpty() || replacement == null) {
+            return text;
+        }
+
+        // Build pattern that matches nameToReplace allowing any formatting codes between or immediately before characters
+        StringBuilder regex = new StringBuilder("(?i)(?:§[0-9a-fk-orA-FK-OR])*");
+        for (int i = 0; i < nameToReplace.length(); i++) {
+            char c = nameToReplace.charAt(i);
+            regex.append(Pattern.quote(String.valueOf(c)));
+            if (i < nameToReplace.length() - 1) {
+                regex.append("(?:§[0-9a-fk-orA-FK-OR])*");
+            }
+        }
+
+        Pattern p = Pattern.compile(regex.toString());
+        Matcher m = p.matcher(text);
+        if (!m.find()) {
+            return text;
+        }
+
+        StringBuffer sb = new StringBuffer();
+        boolean repHasCustomColors = replacement.contains("§");
+        do {
+            int matchStart = m.start();
+            int matchEnd = m.end();
+            String matched = m.group(0);
+
+            String activeBefore = getActiveFormattingAt(text, matchStart);
+            String activeAfter = getActiveFormattingAt(text, matchEnd);
+            List<String> formats = extractCharFormats(matched, activeBefore);
+
+            String repToInsert;
+            if (repHasCustomColors) {
+                repToInsert = replacement;
+                if (!activeAfter.isEmpty()) {
+                    repToInsert = replacement + "§r" + activeAfter;
+                }
+            } else if (hasMultipleFormats(formats)) {
+                repToInsert = buildRainbowString(replacement, formats, activeAfter);
+            } else {
+                String singleFmt = (!formats.isEmpty() && !formats.get(0).isEmpty()) ? formats.get(0) : activeBefore;
+                if (!singleFmt.isEmpty()) {
+                    repToInsert = singleFmt + replacement;
+                    if (!activeAfter.isEmpty() && !activeAfter.equalsIgnoreCase(singleFmt)) {
+                        repToInsert = singleFmt + replacement + "§r" + activeAfter;
+                    }
+                } else {
+                    repToInsert = replacement;
+                }
+            }
+
+            m.appendReplacement(sb, Matcher.quoteReplacement(repToInsert));
+        } while (m.find());
+        m.appendTail(sb);
+
+        return sb.toString();
+    }
+
     public static String filterString(String text) {
         if (text == null) return null;
 
@@ -367,16 +598,7 @@ public class NickHiderMod implements ClientModInitializer {
         java.util.List<String> names = getNamesToReplace();
         for (String name : names) {
             if (name == null || name.isEmpty() || name.equalsIgnoreCase(fakeNick)) continue;
-
-            if (text.contains(name)) {
-                text = text.replace(name, fakeNick);
-            } else {
-                Pattern pattern = Pattern.compile("(?i)" + Pattern.quote(name));
-                Matcher matcher = pattern.matcher(text);
-                if (matcher.find()) {
-                    text = matcher.replaceAll(Matcher.quoteReplacement(fakeNick));
-                }
-            }
+            text = replaceNickInText(text, name, fakeNick);
         }
 
         return text;
@@ -399,6 +621,45 @@ public class NickHiderMod implements ClientModInitializer {
         return text.replaceAll("(?i)[&§][0-9A-FK-OR]", "");
     }
 
+    private static java.lang.reflect.Field chatTextField = null;
+    static {
+        try {
+            chatTextField = ChatComponentText.class.getDeclaredField("text");
+            chatTextField.setAccessible(true);
+        } catch (Throwable t) {
+            try {
+                for (java.lang.reflect.Field f : ChatComponentText.class.getDeclaredFields()) {
+                    if (f.getType() == String.class) {
+                        chatTextField = f;
+                        chatTextField.setAccessible(true);
+                        break;
+                    }
+                }
+            } catch (Throwable ignored) {}
+        }
+    }
+
+    public static void setChatComponentTextValue(ChatComponentText component, String newText) {
+        if (component == null) return;
+        try {
+            if (chatTextField != null) {
+                chatTextField.set(component, newText);
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    public static void collectTextLeaves(IChatComponent component, java.util.List<ChatComponentText> leaves) {
+        if (component == null) return;
+        if (component instanceof ChatComponentText) {
+            leaves.add((ChatComponentText) component);
+        }
+        for (Object sibling : component.getSiblings()) {
+            if (sibling instanceof IChatComponent) {
+                collectTextLeaves((IChatComponent) sibling, leaves);
+            }
+        }
+    }
+
     public static IChatComponent filterText(IChatComponent component) {
         return filterComponent(component);
     }
@@ -408,9 +669,132 @@ public class NickHiderMod implements ClientModInitializer {
         if (fakeNick == null && !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) return component;
 
         try {
-            return filterComponentRecursive(component);
+            java.util.List<ChatComponentText> leaves = new java.util.ArrayList<ChatComponentText>();
+            collectTextLeaves(component, leaves);
+
+            if (!leaves.isEmpty()) {
+                if (dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) {
+                    for (ChatComponentText leaf : leaves) {
+                        String val = leaf.getChatComponentText_TextValue();
+                        if (val != null && !val.isEmpty()) {
+                            String filtered = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterGeneralString(val);
+                            if (!val.equals(filtered)) {
+                                setChatComponentTextValue(leaf, filtered);
+                            }
+                        }
+                    }
+                }
+
+                if (fakeNick != null && !fakeNick.isEmpty()) {
+                    filterLeavesForNick(leaves, fakeNick);
+                }
+
+                return component;
+            } else {
+                return filterComponentRecursive(component);
+            }
         } catch (Exception e) {
             return component;
+        }
+    }
+
+    private static void filterLeavesForNick(java.util.List<ChatComponentText> leaves, String fakeNick) {
+        java.util.List<String> names = getNamesToReplace();
+        for (String name : names) {
+            if (name == null || name.isEmpty() || name.equalsIgnoreCase(fakeNick)) continue;
+
+            // 1. Single-leaf replacement (handles names fully inside one leaf, preserving § color codes)
+            for (ChatComponentText leaf : leaves) {
+                String val = leaf.getChatComponentText_TextValue();
+                if (val != null && !val.isEmpty() && stripColorCodes(val).toLowerCase().contains(name.toLowerCase())) {
+                    String filtered = replaceNickInText(val, name, fakeNick);
+                    if (!val.equals(filtered)) {
+                        setChatComponentTextValue(leaf, filtered);
+                    }
+                }
+            }
+
+            // 2. Multi-leaf replacement (handles names split across multiple sibling leaves with styles)
+            replaceNameAcrossLeaves(leaves, name, fakeNick);
+        }
+    }
+
+    private static void replaceNameAcrossLeaves(java.util.List<ChatComponentText> leaves, String name, String fakeNick) {
+        if (leaves == null || leaves.size() <= 1 || name == null || name.isEmpty() || fakeNick == null) return;
+
+        StringBuilder combined = new StringBuilder();
+        for (ChatComponentText leaf : leaves) {
+            String text = leaf.getChatComponentText_TextValue();
+            if (text != null) combined.append(text);
+        }
+        String fullText = combined.toString();
+        if (!fullText.toLowerCase().contains(name.toLowerCase())) return;
+
+        Pattern p = Pattern.compile("(?i)" + Pattern.quote(name));
+        Matcher m = p.matcher(fullText);
+        while (m.find()) {
+            int matchStart = m.start();
+            int matchEnd = m.end();
+
+            int currentPos = 0;
+            int firstLeafIdx = -1;
+            int lastLeafIdx = -1;
+            int firstLeafOffset = 0;
+            int lastLeafEndOffset = 0;
+
+            for (int i = 0; i < leaves.size(); i++) {
+                ChatComponentText leaf = leaves.get(i);
+                String text = leaf.getChatComponentText_TextValue();
+                int len = (text != null) ? text.length() : 0;
+                int leafStart = currentPos;
+                int leafEnd = currentPos + len;
+                currentPos = leafEnd;
+
+                if (leafEnd > matchStart && leafStart < matchEnd) {
+                    if (firstLeafIdx == -1) {
+                        firstLeafIdx = i;
+                        firstLeafOffset = matchStart - leafStart;
+                    }
+                    lastLeafIdx = i;
+                    lastLeafEndOffset = matchEnd - leafStart;
+                }
+            }
+
+            if (firstLeafIdx != -1 && firstLeafIdx < lastLeafIdx) {
+                int numLeaves = lastLeafIdx - firstLeafIdx + 1;
+                int fakeLen = fakeNick.length();
+
+                for (int k = 0; k < numLeaves; k++) {
+                    int leafIdx = firstLeafIdx + k;
+                    ChatComponentText targetLeaf = leaves.get(leafIdx);
+                    String origText = targetLeaf.getChatComponentText_TextValue();
+                    if (origText == null) origText = "";
+
+                    int segStart = k * fakeLen / numLeaves;
+                    int segEnd = (k + 1) * fakeLen / numLeaves;
+                    if (k == numLeaves - 1) segEnd = fakeLen;
+                    String segment = (segStart < segEnd && segStart < fakeLen) ? fakeNick.substring(segStart, Math.min(segEnd, fakeLen)) : "";
+
+                    if (k == 0) {
+                        String prefix = (firstLeafOffset > 0 && firstLeafOffset <= origText.length()) ? origText.substring(0, firstLeafOffset) : "";
+                        setChatComponentTextValue(targetLeaf, prefix + segment);
+                    } else if (k == numLeaves - 1) {
+                        String suffix = (lastLeafEndOffset >= 0 && lastLeafEndOffset < origText.length()) ? origText.substring(lastLeafEndOffset) : "";
+                        setChatComponentTextValue(targetLeaf, segment + suffix);
+                    } else {
+                        setChatComponentTextValue(targetLeaf, segment);
+                    }
+                }
+
+                // Re-evaluate combined text for any additional occurrences
+                combined.setLength(0);
+                for (ChatComponentText leaf : leaves) {
+                    String text = leaf.getChatComponentText_TextValue();
+                    if (text != null) combined.append(text);
+                }
+                fullText = combined.toString();
+                m = p.matcher(fullText);
+            }
         }
     }
 

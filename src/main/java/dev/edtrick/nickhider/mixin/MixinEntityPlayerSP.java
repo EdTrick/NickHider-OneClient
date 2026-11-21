@@ -21,6 +21,26 @@ public class MixinEntityPlayerSP {
             if (NickHiderCommand.handle(trimmed)) {
                 ci.cancel();
             }
+            return;
+        }
+
+        // Track chat message or /nick command
+        if (!trimmed.startsWith("/")) {
+            dev.edtrick.nickhider.NickHiderMod.recordSentChatMessage(trimmed);
+        } else {
+            if (lower.startsWith("/nick ")) {
+                String arg = trimmed.substring(6).trim();
+                if (!arg.equalsIgnoreCase("reset") && !arg.equalsIgnoreCase("help") && !arg.equalsIgnoreCase("random")) {
+                    String clean = arg.replaceAll("[^A-Za-z0-9_]", "");
+                    if (clean.length() >= 3 && clean.length() <= 16) {
+                        dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(clean);
+                    }
+                } else if (arg.equalsIgnoreCase("reset")) {
+                    dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(null);
+                }
+            } else if (lower.equals("/unnick")) {
+                dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(null);
+            }
         }
     }
 
@@ -36,8 +56,32 @@ public class MixinEntityPlayerSP {
 
     @Inject(method = "onUpdate", at = @At("HEAD"))
     private void nickhider_onUpdate(CallbackInfo ci) {
-        if (!BedwarsLevelManager.isEnabled()) return;
         EntityPlayerSP player = (EntityPlayerSP) (Object) this;
+
+        // Auto-detect server-assigned nick from tablist entry
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
+            if (mc != null && mc.getNetHandler() != null && player.getUniqueID() != null) {
+                net.minecraft.client.network.NetworkPlayerInfo info = mc.getNetHandler().getPlayerInfo(player.getUniqueID());
+                if (info != null && info.getGameProfile() != null) {
+                    String currentTabName = info.getGameProfile().getName();
+                    String realName = (mc.getSession() != null) ? mc.getSession().getUsername() : null;
+                    if (currentTabName != null && !currentTabName.isEmpty()) {
+                        if (realName != null && !currentTabName.equalsIgnoreCase(realName)) {
+                            String fake = dev.edtrick.nickhider.NickHiderMod.getFakeNick();
+                            if (fake == null || !currentTabName.equalsIgnoreCase(dev.edtrick.nickhider.NickHiderMod.stripColorCodes(fake))) {
+                                String currentDetected = dev.edtrick.nickhider.NickHiderMod.getDetectedChatNick();
+                                if (currentDetected == null || !currentDetected.equalsIgnoreCase(currentTabName)) {
+                                    dev.edtrick.nickhider.NickHiderMod.setDetectedChatNick(currentTabName);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        if (!BedwarsLevelManager.isEnabled()) return;
         if (BedwarsLevelManager.isBedwarsMatchActive()) {
             if (player.experienceLevel != BedwarsLevelManager.getFakeStars()) {
                 BedwarsLevelManager.setDetectedRealStars(player.experienceLevel);

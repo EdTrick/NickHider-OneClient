@@ -16,6 +16,8 @@
     "MixinShellSession",
     "MixinTileEntitySkullRenderer",
     "MixinItemSkull",
+    "MixinRenderPlayer",
+    "MixinEntityPlayer",
     "NetworkPlayerInfoAccessor"
   ],
   "injectors": {

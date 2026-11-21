@@ -29,6 +29,14 @@ public class NickHiderConfig extends Config {
     )
     public static String fakeNick = "";
 
+    @Text(
+            title = "Server Nick",
+            description = "Server-side nick (auto-detected when chatting or via /nick, or set manually)",
+            placeholder = "auto",
+            subcategory = "Nickname"
+    )
+    public static String serverNick = "auto";
+
     @Button(
             title = "Apply Nick",
             text = "Apply",
@@ -42,6 +50,9 @@ public class NickHiderConfig extends Config {
         } else {
             enableNickHider = true;
             NickHiderCommand.handleSetNick(fakeNick.trim());
+        }
+        if (serverNick != null && !serverNick.trim().isEmpty() && !serverNick.equalsIgnoreCase("auto")) {
+            NickHiderMod.setDetectedChatNick(serverNick.trim());
         }
         save();
     }
@@ -214,6 +225,8 @@ public class NickHiderConfig extends Config {
             if (NickHiderMod.getFakeNick() != null) {
                 fakeNick = NickHiderMod.getFakeNick();
             }
+            String sn = NickHiderMod.getDetectedChatNick();
+            serverNick = (sn != null) ? sn : "auto";
             enableSkinHider = (NickHiderMod.getFakeSkinOwner() != null);
             if (NickHiderMod.getFakeSkinOwner() != null) {
                 fakeSkin = NickHiderMod.getFakeSkinOwner();

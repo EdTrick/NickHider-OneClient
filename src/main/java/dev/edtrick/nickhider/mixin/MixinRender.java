@@ -23,6 +23,12 @@ public class MixinRender {
         if (!isLocal) {
             isLocal = NickHiderMod.containsLocalPlayerName(text);
         }
+        if (!isLocal && text != null) {
+            String stripped = NickHiderMod.stripColorCodes(text).toLowerCase();
+            if (stripped.contains("your level:") || (stripped.contains("your") && stripped.contains("profile"))) {
+                isLocal = true;
+            }
+        }
         if (!isLocal && NickHiderMod.getFakeNick() != null && !NickHiderMod.getFakeNick().isEmpty()) {
             isLocal = NickHiderMod.stripColorCodes(text).toLowerCase().contains(NickHiderMod.getFakeNick().toLowerCase());
         }
