@@ -18,6 +18,7 @@
     "MixinItemSkull",
     "MixinRenderPlayer",
     "MixinEntityPlayer",
+    "MixinFontRenderer",
     "NetworkPlayerInfoAccessor"
   ],
   "injectors": {
