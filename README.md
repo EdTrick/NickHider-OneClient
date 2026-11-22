@@ -256,7 +256,7 @@ To compile the mod from source code:
      ./gradlew build
      ```
 
-3. The finished `.jar` file will be located in `build/libs/nickhider-1.2.0.jar`.
+3. The finished `.jar` file will be located in `build/libs/nickhider-1.2.1.jar`.
 
 ---
 
