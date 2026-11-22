@@ -362,84 +362,65 @@ public class BedwarsLevelManager {
     }
 
     /**
-     * Filters chat messages: if the message contains the local player's name (or server fake nick),
-     * detect the server-generated Bedwars star tag and replace it with the fake Bedwars tag.
+     * Filters chat messages: if the message was sent by the local player (or is a pre-game join/quit
+     * by the local player), replace their Bedwars star tag with the fake Bedwars tag.
+     * Strictly verifies that the local player is the speaker before the colon, ensuring that other players
+     * mentioning the local player's name NEVER have their star tags altered.
      */
     public static IChatComponent filterChat(IChatComponent component) {
         if (component == null || !enabled || !isBedwarsActive()) return component;
         try {
-            String fullUnformatted = component.getUnformattedText();
-            List<String> names = NickHiderMod.getNamesToReplace();
-            boolean mentionsLocal = false;
-            for (String name : names) {
-                if (name != null && !name.isEmpty() && fullUnformatted.toLowerCase().contains(name.toLowerCase())) {
-                    mentionsLocal = true;
-                    break;
-                }
-            }
-            if (!mentionsLocal) {
+            String fullUnformatted = NickHiderMod.stripColorCodes(component.getUnformattedText());
+
+            // 1. Quick check: does the message contain any Bedwars star tag at all?
+            if (!BW_TAG_REGEX.matcher(component.getFormattedText()).find()
+                    && !BW_TAG_REGEX.matcher(fullUnformatted).find()) {
                 return component;
             }
 
-            List<ChatComponentText> leaves = new ArrayList<ChatComponentText>();
+            // 2. Identify if the local player is the owner/speaker of this message:
+            int colonIdx = fullUnformatted.indexOf(':');
+            boolean isLocalMessage = false;
+
+            if (colonIdx != -1) {
+                // In chat messages, the speaker prefix is everything before the first colon
+                String speakerPrefix = fullUnformatted.substring(0, colonIdx);
+                isLocalMessage = NickHiderMod.containsLocalPlayerName(speakerPrefix);
+                if (!isLocalMessage && NickHiderMod.getFakeNick() != null && !NickHiderMod.getFakeNick().isEmpty()) {
+                    isLocalMessage = speakerPrefix.toLowerCase().contains(NickHiderMod.getFakeNick().toLowerCase());
+                }
+            } else {
+                // If there is no colon, check for pre-game lobby join/quit messages
+                String lower = fullUnformatted.toLowerCase();
+                int actionIdx = lower.indexOf("has joined");
+                if (actionIdx == -1) actionIdx = lower.indexOf("has quit");
+                if (actionIdx != -1) {
+                    String playerPart = fullUnformatted.substring(0, actionIdx);
+                    isLocalMessage = NickHiderMod.containsLocalPlayerName(playerPart);
+                    if (!isLocalMessage && NickHiderMod.getFakeNick() != null && !NickHiderMod.getFakeNick().isEmpty()) {
+                        isLocalMessage = playerPart.toLowerCase().contains(NickHiderMod.getFakeNick().toLowerCase());
+                    }
+                }
+            }
+
+            // If the message is NOT from/about the local player, leave star tags completely untouched!
+            if (!isLocalMessage) {
+                return component;
+            }
+
+            // 3. The message is confirmed from the local player: replace their star tag
+            List<ChatComponentText> leaves = new ArrayList<>();
             collectLeaves(component, leaves);
             if (leaves.isEmpty()) return component;
 
-            // 1. Check if the local player is the speaker (name followed by ':' in leaf or adjacent leaf)
-            int speakerLeafIdx = -1;
-            for (int i = 0; i < leaves.size(); i++) {
-                String leafText = NickHiderMod.stripColorCodes(leaves.get(i).getChatComponentText_TextValue()).toLowerCase();
-                for (String name : names) {
-                    if (name != null && !name.isEmpty()) {
-                        String nameLower = name.toLowerCase();
-                        if (leafText.contains(nameLower)) {
-                            boolean isSpeaker = leafText.contains(nameLower + ":")
-                                    || (i + 1 < leaves.size() && leaves.get(i + 1).getChatComponentText_TextValue().trim().startsWith(":"));
-                            if (isSpeaker) {
-                                speakerLeafIdx = i;
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (speakerLeafIdx != -1) break;
-            }
-
-            // If local player is speaking, search backwards from the speaker's name for the Bedwars star tag
-            if (speakerLeafIdx != -1) {
-                for (int i = speakerLeafIdx; i >= 0; i--) {
-                    ChatComponentText leaf = leaves.get(i);
-                    String val = leaf.getChatComponentText_TextValue();
-                    Matcher m = BW_TAG_REGEX.matcher(val);
-                    if (m.find()) {
-                        recordRealStars(m.group());
-                        String replaced = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
-                        setLeafText(leaf, replaced);
-                        break;
-                    }
-                }
-            } else {
-                // If not standard ": " chat (e.g. system join/kill/shout message), check leaves near local player name
-                for (int i = 0; i < leaves.size(); i++) {
-                    ChatComponentText leaf = leaves.get(i);
-                    String val = leaf.getChatComponentText_TextValue();
-                    Matcher m = BW_TAG_REGEX.matcher(val);
-                    if (m.find()) {
-                        boolean adjacentLocal = false;
-                        int start = Math.max(0, i - 2);
-                        int end = Math.min(leaves.size() - 1, i + 2);
-                        for (int j = start; j <= end; j++) {
-                            if (NickHiderMod.containsLocalPlayerName(leaves.get(j).getChatComponentText_TextValue())) {
-                                adjacentLocal = true;
-                                break;
-                            }
-                        }
-                        if (adjacentLocal) {
-                            recordRealStars(m.group());
-                            String replaced = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
-                            setLeafText(leaf, replaced);
-                        }
-                    }
+            for (ChatComponentText leaf : leaves) {
+                String val = leaf.getChatComponentText_TextValue();
+                Matcher m = BW_TAG_REGEX.matcher(val);
+                if (m.find()) {
+                    recordRealStars(m.group());
+                    String replaced = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
+                    setLeafText(leaf, replaced);
+                    break; // Only the speaker's star tag in the header
                 }
             }
 
@@ -452,23 +433,28 @@ public class BedwarsLevelManager {
     public static String filterChatString(String text) {
         if (text == null || !enabled || !isBedwarsActive()) return text;
 
-        // Check if message belongs to or mentions the local player
+        int colon = text.indexOf(':');
+        String speaker = (colon != -1) ? text.substring(0, colon) : text;
         List<String> names = NickHiderMod.getNamesToReplace();
         boolean hasLocalPlayer = false;
         for (String name : names) {
-            if (name != null && !name.isEmpty() && text.toLowerCase().contains(name.toLowerCase())) {
+            if (name != null && !name.isEmpty() && speaker.toLowerCase().contains(name.toLowerCase())) {
                 hasLocalPlayer = true;
                 break;
             }
         }
+        if (!hasLocalPlayer && NickHiderMod.getFakeNick() != null && !NickHiderMod.getFakeNick().isEmpty()) {
+            if (NickHiderMod.stripColorCodes(speaker).toLowerCase().contains(NickHiderMod.getFakeNick().toLowerCase())) {
+                hasLocalPlayer = true;
+            }
+        }
+
+        if (!hasLocalPlayer) return text;
 
         Matcher matcher = BW_TAG_REGEX.matcher(text);
         if (matcher.find()) {
             recordRealStars(matcher.group());
-
-            if (hasLocalPlayer) {
-                text = matcher.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
-            }
+            text = matcher.replaceFirst(Matcher.quoteReplacement(getFormattedTag()));
         }
 
         return text;
@@ -533,16 +519,21 @@ public class BedwarsLevelManager {
         if (text == null || !enabled || !isBedwarsActive()) return text;
         if (text.contains(getFormattedWithoutBrackets()) || text.contains(getFormattedTag())) return text;
 
+        // If the string contains a colon (like a chat message "Speaker: Message"),
+        // the local player MUST be in the speaker portion (before the colon).
+        int colon = text.indexOf(':');
+        String targetPrefix = (colon != -1) ? text.substring(0, colon) : text;
+
         List<String> names = NickHiderMod.getNamesToReplace();
         boolean hasLocalPlayer = false;
         for (String name : names) {
-            if (name != null && !name.isEmpty() && text.toLowerCase().contains(name.toLowerCase())) {
+            if (name != null && !name.isEmpty() && targetPrefix.toLowerCase().contains(name.toLowerCase())) {
                 hasLocalPlayer = true;
                 break;
             }
         }
         if (!hasLocalPlayer && NickHiderMod.getFakeNick() != null && !NickHiderMod.getFakeNick().isEmpty()) {
-            if (NickHiderMod.stripColorCodes(text).toLowerCase().contains(NickHiderMod.getFakeNick().toLowerCase())) {
+            if (NickHiderMod.stripColorCodes(targetPrefix).toLowerCase().contains(NickHiderMod.getFakeNick().toLowerCase())) {
                 hasLocalPlayer = true;
             }
         }

@@ -703,30 +703,14 @@ public class NickHiderMod implements ClientModInitializer {
     }
 
     public static IChatComponent filterComponent(IChatComponent component) {
-        if (component == null) return null;
-        if (fakeNick == null && !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) return component;
+        if (component == null || fakeNick == null || fakeNick.isEmpty()) return component;
 
         try {
             java.util.List<ChatComponentText> leaves = new java.util.ArrayList<ChatComponentText>();
             collectTextLeaves(component, leaves);
 
             if (!leaves.isEmpty()) {
-                if (dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) {
-                    for (ChatComponentText leaf : leaves) {
-                        String val = leaf.getChatComponentText_TextValue();
-                        if (val != null && !val.isEmpty()) {
-                            String filtered = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterGeneralString(val);
-                            if (!val.equals(filtered)) {
-                                setChatComponentTextValue(leaf, filtered);
-                            }
-                        }
-                    }
-                }
-
-                if (fakeNick != null && !fakeNick.isEmpty()) {
-                    filterLeavesForNick(leaves, fakeNick);
-                }
-
+                filterLeavesForNick(leaves, fakeNick);
                 return component;
             } else {
                 return filterComponentRecursive(component);
