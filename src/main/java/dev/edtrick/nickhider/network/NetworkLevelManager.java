@@ -26,7 +26,7 @@ public class NetworkLevelManager {
 
     // Nametag line above player e.g. "§9Level§f: §e95", "[Level: 95]", "Level: 95"
     public static final Pattern NAMETAG_LEVEL_REGEX = Pattern.compile(
-            "(?i)^((?:§[0-9a-fk-orA-FK-OR]|\\s|\\[)*(?:hypixel|network)?(?:§[0-9a-fk-orA-FK-OR]|\\s)*level(?:§[0-9a-fk-orA-FK-OR]|\\s)*:(?:§[0-9a-fk-orA-FK-OR]|\\s)*)[0-9]{1,5}"
+            "(?i)((?:§[0-9a-fk-orA-FK-OR]|\\s|\\[)*(?:hypixel|network)?(?:§[0-9a-fk-orA-FK-OR]|\\s)*level(?:§[0-9a-fk-orA-FK-OR]|\\s)*:(?:§[0-9a-fk-orA-FK-OR]|\\s)*)[0-9]{1,5}"
     );
 
     // Scoreboard line e.g. "Hypixel Level: 95", "§fHypixel §fLevel: §b96"
@@ -297,7 +297,18 @@ public class NetworkLevelManager {
 
     private static void captureRealLevel(String matchedText) {
         if (matchedText == null) return;
-        String digits = matchedText.replaceAll("[^0-9]", "");
+        String clean = NickHiderMod.stripColorCodes(matchedText);
+        Matcher dm = Pattern.compile("(?i)level\\s*:?\\s*([0-9]{1,5})").matcher(clean);
+        if (dm.find()) {
+            try {
+                int parsed = Integer.parseInt(dm.group(1));
+                if (parsed != fakeLevel && parsed > 0 && parsed <= 5000) {
+                    detectedRealLevel = parsed;
+                }
+            } catch (NumberFormatException ignored) {}
+            return;
+        }
+        String digits = clean.replaceAll("[^0-9]", "");
         if (!digits.isEmpty()) {
             try {
                 int parsed = Integer.parseInt(digits);

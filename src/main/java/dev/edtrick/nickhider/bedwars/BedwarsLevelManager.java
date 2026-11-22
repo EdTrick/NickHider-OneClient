@@ -28,9 +28,9 @@ public class BedwarsLevelManager {
             "(?i)((?:§[0-9a-fk-orA-FK-OR])*)\\[([^]]*?[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*][^]]*?)\\]"
     );
 
-    // Pattern matching scoreboard, nametag, and actionbar "Stars: 142", "BedWars: 142" or "Level: 142", optionally with star icon
+    // Pattern matching scoreboard, nametag, and actionbar "Stars: 142", "BedWars: 142" or "Level: 142✫" (requires star icon for 'level')
     public static final Pattern SCOREBOARD_STARS_REGEX = Pattern.compile(
-            "(?i)((?:§[0-9a-fk-orA-FK-OR]|\\s)*(?:stars|level|bedwars)(?:§[0-9a-fk-orA-FK-OR]|\\s)*:(?:§[0-9a-fk-orA-FK-OR]|\\s)*)(?:\\[?(?:(?:§[0-9a-fk-orA-FK-OR])*[0-9])+(?:§[0-9a-fk-orA-FK-OR]|\\s)*[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*]\\]?|[0-9]{1,5}(?:\\s*(?:§[0-9a-fk-orA-FK-OR])*[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*])?)"
+            "(?i)((?:§[0-9a-fk-orA-FK-OR]|\\s)*(?:stars|bedwars|(?:level(?=.*[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*])))(?:§[0-9a-fk-orA-FK-OR]|\\s)*:(?:§[0-9a-fk-orA-FK-OR]|\\s)*)(?:\\[?(?:(?:§[0-9a-fk-orA-FK-OR])*[0-9])+(?:§[0-9a-fk-orA-FK-OR]|\\s)*[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*]\\]?|[0-9]{1,5}(?:\\s*(?:§[0-9a-fk-orA-FK-OR])*[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*])?)"
     );
 
     // ─── Getters & Setters ───────────────────────────────────────────────────
@@ -296,23 +296,26 @@ public class BedwarsLevelManager {
         }
     }
 
+    private static void recordRealStars(String rawTag) {
+        if (rawTag == null) return;
+        String digitsOnly = NickHiderMod.stripColorCodes(rawTag).replaceAll("[^0-9]", "");
+        if (!digitsOnly.isEmpty()) {
+            try {
+                int parsed = Integer.parseInt(digitsOnly);
+                if (parsed != fakeStars && parsed > 0 && parsed <= 10000) {
+                    detectedRealStars = parsed;
+                    detectedRealBwTag = rawTag;
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+    }
+
     public static String replaceTagInString(String text) {
         if (text == null) return null;
         Matcher m = BW_TAG_REGEX.matcher(text);
         if (m.find()) {
-            String fullMatch = m.group();
-            String digitsOnly = fullMatch.replaceAll("[^0-9]", "");
-            if (!digitsOnly.isEmpty()) {
-                try {
-                    detectedRealStars = Integer.parseInt(digitsOnly);
-                    detectedRealBwTag = fullMatch;
-                } catch (NumberFormatException ignored) {}
-            }
+            recordRealStars(m.group());
             return m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
-        }
-        Matcher sbMatcher = SCOREBOARD_STARS_REGEX.matcher(text);
-        if (sbMatcher.find()) {
-            return sbMatcher.replaceFirst(Matcher.quoteReplacement(sbMatcher.group(1) + getFormattedWithoutBrackets()));
         }
         return text;
     }
@@ -409,14 +412,7 @@ public class BedwarsLevelManager {
                     String val = leaf.getChatComponentText_TextValue();
                     Matcher m = BW_TAG_REGEX.matcher(val);
                     if (m.find()) {
-                        String fullMatch = m.group();
-                        String digitsOnly = fullMatch.replaceAll("[^0-9]", "");
-                        if (!digitsOnly.isEmpty()) {
-                            try {
-                                detectedRealStars = Integer.parseInt(digitsOnly);
-                                detectedRealBwTag = fullMatch;
-                            } catch (NumberFormatException ignored) {}
-                        }
+                        recordRealStars(m.group());
                         String replaced = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
                         setLeafText(leaf, replaced);
                         break;
@@ -439,14 +435,7 @@ public class BedwarsLevelManager {
                             }
                         }
                         if (adjacentLocal) {
-                            String fullMatch = m.group();
-                            String digitsOnly = fullMatch.replaceAll("[^0-9]", "");
-                            if (!digitsOnly.isEmpty()) {
-                                try {
-                                    detectedRealStars = Integer.parseInt(digitsOnly);
-                                    detectedRealBwTag = fullMatch;
-                                } catch (NumberFormatException ignored) {}
-                            }
+                            recordRealStars(m.group());
                             String replaced = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
                             setLeafText(leaf, replaced);
                         }
@@ -475,14 +464,7 @@ public class BedwarsLevelManager {
 
         Matcher matcher = BW_TAG_REGEX.matcher(text);
         if (matcher.find()) {
-            String fullMatch = matcher.group();
-            String digitsOnly = fullMatch.replaceAll("[^0-9]", "");
-            if (!digitsOnly.isEmpty()) {
-                try {
-                    detectedRealStars = Integer.parseInt(digitsOnly);
-                    detectedRealBwTag = fullMatch;
-                } catch (NumberFormatException ignored) {}
-            }
+            recordRealStars(matcher.group());
 
             if (hasLocalPlayer) {
                 text = matcher.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
@@ -505,14 +487,7 @@ public class BedwarsLevelManager {
         if (isLocalPlayer) {
             Matcher m = BW_TAG_REGEX.matcher(text);
             if (m.find()) {
-                String fullMatch = m.group();
-                String digitsOnly = fullMatch.replaceAll("[^0-9]", "");
-                if (!digitsOnly.isEmpty()) {
-                    try {
-                        detectedRealStars = Integer.parseInt(digitsOnly);
-                        detectedRealBwTag = fullMatch;
-                    } catch (NumberFormatException ignored) {}
-                }
+                recordRealStars(m.group());
                 text = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
             }
         }
@@ -575,14 +550,7 @@ public class BedwarsLevelManager {
         if (hasLocalPlayer) {
             Matcher m = BW_TAG_REGEX.matcher(text);
             if (m.find()) {
-                String fullMatch = m.group();
-                String digitsOnly = fullMatch.replaceAll("[^0-9]", "");
-                if (!digitsOnly.isEmpty()) {
-                    try {
-                        detectedRealStars = Integer.parseInt(digitsOnly);
-                        detectedRealBwTag = fullMatch;
-                    } catch (NumberFormatException ignored) {}
-                }
+                recordRealStars(m.group());
                 text = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
             }
         }
