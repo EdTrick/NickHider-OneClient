@@ -37,6 +37,7 @@ public class MixinGuiNewChat {
             }
 
             message = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterChat(message);
+            message = dev.edtrick.nickhider.network.NetworkLevelManager.filterChat(message);
         }
         return NickHiderMod.filterText(message);
     }

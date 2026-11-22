@@ -37,6 +37,10 @@ public class MixinRender {
             text = BedwarsLevelManager.replaceTagInString(text);
         }
 
+        if (isLocal && dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
+            text = dev.edtrick.nickhider.network.NetworkLevelManager.replaceLevelInNametag(text);
+        }
+
         return NickHiderMod.filterString(text);
     }
 }

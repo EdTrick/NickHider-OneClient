@@ -20,29 +20,33 @@ public class MixinGuiIngame {
 
     @Inject(method = "renderExpBar", at = @At("HEAD"))
     private void nickhider_renderExpBar(ScaledResolution scaledRes, int x, CallbackInfo ci) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) return;
         if (BedwarsLevelManager.isEnabled() && BedwarsLevelManager.isBedwarsMatchActive()) {
-            Minecraft mc = Minecraft.getMinecraft();
-            if (mc != null && mc.thePlayer != null) {
-                mc.thePlayer.experienceLevel = BedwarsLevelManager.getFakeStars();
-            }
+            mc.thePlayer.experienceLevel = BedwarsLevelManager.getFakeStars();
+        } else if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
+            mc.thePlayer.experienceLevel = dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel();
         }
     }
 
     @ModifyVariable(method = "displayTitle", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private String nickhider_modifyTitle(String title) {
         title = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterActionBarOrTitle(title);
+        title = dev.edtrick.nickhider.network.NetworkLevelManager.filterActionBarOrTitle(title);
         return NickHiderMod.filterString(title);
     }
 
     @ModifyVariable(method = "displayTitle", at = @At("HEAD"), argsOnly = true, ordinal = 1)
     private String nickhider_modifySubtitle(String subTitle) {
         subTitle = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterActionBarOrTitle(subTitle);
+        subTitle = dev.edtrick.nickhider.network.NetworkLevelManager.filterActionBarOrTitle(subTitle);
         return NickHiderMod.filterString(subTitle);
     }
 
     @ModifyVariable(method = "setRecordPlaying(Ljava/lang/String;Z)V", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private String nickhider_modifyRecordPlayingString(String message) {
         message = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterActionBarOrTitle(message);
+        message = dev.edtrick.nickhider.network.NetworkLevelManager.filterActionBarOrTitle(message);
         return NickHiderMod.filterString(message);
     }
 
@@ -50,6 +54,7 @@ public class MixinGuiIngame {
     private IChatComponent nickhider_modifyRecordPlayingComponent(IChatComponent message) {
         if (message != null) {
             message = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterChat(message);
+            message = dev.edtrick.nickhider.network.NetworkLevelManager.filterChat(message);
         }
         return NickHiderMod.filterText(message);
     }

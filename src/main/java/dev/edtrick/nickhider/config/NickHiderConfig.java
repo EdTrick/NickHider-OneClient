@@ -172,6 +172,50 @@ public class NickHiderConfig extends Config {
         }
     }
 
+    // ─── Network Level Section ───────────────────────────────────────────────
+
+    @Switch(
+            title = "Enable Network Level",
+            description = "Toggle client-side Hypixel Network Level spoofing on or off",
+            subcategory = "Network Level"
+    )
+    public static boolean enableNetworkLevel = false;
+
+    @Text(
+            title = "Network Level",
+            description = "Enter spoofed Hypixel Network Level (0 - 10000)",
+            placeholder = "250",
+            subcategory = "Network Level"
+    )
+    public static String networkLevel = "250";
+
+    @Button(
+            title = "Apply Network Level",
+            text = "Apply",
+            description = "Apply Hypixel Network Level configuration",
+            subcategory = "Network Level"
+    )
+    public void applyNetworkLevel() {
+        syncing = true;
+        try {
+            boolean inEnabled = enableNetworkLevel;
+            String inLevel = (networkLevel != null) ? networkLevel.trim() : "";
+            int lvl = 250;
+            if (!inLevel.isEmpty()) {
+                try {
+                    lvl = Integer.parseInt(inLevel);
+                } catch (NumberFormatException ignored) {}
+            }
+            dev.edtrick.nickhider.network.NetworkLevelManager.setAll(inEnabled, lvl);
+            networkLevel = String.valueOf(lvl);
+            enableNetworkLevel = inEnabled;
+            save();
+            NickHiderMod.sendMessage("§aNetwork Level configuration applied: §b" + lvl);
+        } finally {
+            syncing = false;
+        }
+    }
+
     // ─── Constructor & Callbacks ─────────────────────────────────────────────
 
     public NickHiderConfig() {
@@ -215,6 +259,15 @@ public class NickHiderConfig extends Config {
                     ? "§aBedwars Level spoofing enabled: " + dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getFormattedTag()
                     : "§eBedwars Level spoofing disabled.");
         });
+
+        addCallback("enableNetworkLevel", () -> {
+            if (syncing) return;
+            dev.edtrick.nickhider.network.NetworkLevelManager.setEnabled(enableNetworkLevel);
+            save();
+            NickHiderMod.sendMessage(enableNetworkLevel
+                    ? "§aHypixel Network Level spoofing enabled: §b" + dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel()
+                    : "§eHypixel Network Level spoofing disabled.");
+        });
     }
 
     public void syncFromMod() {
@@ -238,6 +291,9 @@ public class NickHiderConfig extends Config {
             bwColorPreset = (c >= 0) ? String.valueOf(c) : "auto";
             String ic = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getCustomIcon();
             bwIconPreset = (ic != null) ? ic : "auto";
+
+            enableNetworkLevel = dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled();
+            networkLevel = String.valueOf(dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel());
         } finally {
             syncing = false;
         }

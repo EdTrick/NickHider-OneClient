@@ -49,6 +49,9 @@ public class OneConfigCompat {
             if (NickHiderConfig.enableBwLevel && !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) {
                 dev.edtrick.nickhider.bedwars.BedwarsLevelManager.setEnabled(true);
             }
+            if (NickHiderConfig.enableNetworkLevel && !dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
+                dev.edtrick.nickhider.network.NetworkLevelManager.setEnabled(true);
+            }
             if (NickHiderConfig.serverNick != null && !NickHiderConfig.serverNick.trim().isEmpty()
                     && !NickHiderConfig.serverNick.equalsIgnoreCase("auto")
                     && NickHiderMod.getDetectedChatNick() == null) {

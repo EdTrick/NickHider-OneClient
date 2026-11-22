@@ -31,6 +31,7 @@ Hide your real username, spoof any skin on-the-fly, conceal server-side `/nick` 
   - [5. Interactive In-Game Commands & Autocompletion](#5-interactive-in-game-commands--autocompletion)
   - [6. Hypixel Bedwars Stars & Level Spoofing](#6-hypixel-bedwars-stars--level-spoofing)
   - [7. Server-Side /nick & Hypixel Replay Support](#7-server-side-nick--hypixel-replay-support)
+  - [8. Hypixel Network Level Spoofing](#8-hypixel-network-level-spoofing)
 - [📸 Screenshots & Showcase](#-screenshots--showcase)
 - [⌨️ Commands Reference](#️-commands-reference)
 - [⚙️ Configuration](#️-configuration)
@@ -137,7 +138,14 @@ Unlike legacy nick hiders that blindly replace entire lines of text (breaking sc
   - Running `/nickhider replay` prints a clickable chat list of all players in the replay; clicking your replay identity instantly applies your custom fake nick and skin to your replay character.
   - Can also be set directly with `/nickhider replay [NICK]` (alias: `/nickhider replaynick`).
 
-<img src="./images/13.png" alt="Hypixel Replay & Lobby Profile NPC Disguise" width="720" />
+### 8. Hypixel Network Level Spoofing
+- **Comprehensive Disguise:** Disguises your general Hypixel Network Level everywhere it appears across the server:
+  - 🏷️ **Nametags & LevelHead:** Spoofs `Level: 95` above your character's head to your fake level.
+  - 📋 **Player Profile GUI:** In the Character Information skull tooltip hover menu, your level is seamlessly replaced.
+  - 📊 **Main Lobby & Game Scoreboards:** Disguises `Hypixel Level: 95` / `Network Level: 95` in the sidebar.
+  - 🧪 **Lobby Experience Bar:** Overwrites the XP level counter between your hearts and hunger bar in lobbies.
+  - 💬 **Chat & Level Up Messages:** Intercepts level announcements and `/level` outputs.
+- **Full Control:** Easily configure any level with `/nickhider level <lvl>` (or `/nlvl <lvl>`), toggle ON/OFF with `/nlvl toggle`, or restore your real level with `/nlvl reset`.
 
 ---
 
@@ -176,6 +184,10 @@ You can use `/nickhider`:
 | `/nickhider bwlvl icon [preset]` | Opens star icon menu or sets a custom icon | `/nickhider bwlvl icon 2000` |
 | `/nickhider bwlvl toggle` | Toggles Bedwars level spoofing ON or OFF | `/nickhider bwlvl toggle` |
 | `/nickhider bwlvl reset` | Resets Bedwars spoofing back to default settings | `/nickhider bwlvl reset` |
+| `/nickhider level <lvl>` | Sets fake Hypixel Network Level (0 - 10000) | `/nickhider level 250` |
+| `/nickhider level reset` | Disables network level spoofing and restores real level | `/nickhider level reset` |
+| `/nickhider level toggle`| Toggles network level spoofing ON or OFF | `/nickhider level toggle` |
+| `/nickhider level` | Displays interactive network level control panel & status | `/nickhider level` |
 | `/nickhider help` | Displays the interactive command help menu | `/nickhider help` |
 
 > [!NOTE]
@@ -183,6 +195,7 @@ You can use `/nickhider`:
 > - `/nickhider servernick` ➔ `/nickhider snick`
 > - `/nickhider replay` ➔ `/nickhider replaynick`
 > - `/nickhider bwlvl` ➔ `/nickhider bedwars`
+> - `/nickhider level` ➔ `/nickhider nlvl`, `/nlvl`, `/networklevel`
 
 > [!TIP]
 > You can click on any command in the `/nickhider help` chat message to auto-fill it directly into your chat bar!
@@ -243,7 +256,7 @@ To compile the mod from source code:
      ./gradlew build
      ```
 
-3. The finished `.jar` file will be located in `build/libs/nickhider-1.1.3.jar`.
+3. The finished `.jar` file will be located in `build/libs/nickhider-1.2.0.jar`.
 
 ---
 

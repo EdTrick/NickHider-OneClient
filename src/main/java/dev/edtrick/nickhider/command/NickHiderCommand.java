@@ -38,11 +38,17 @@ public class NickHiderCommand {
             afterCmd = "bwlvl " + trimmed.substring("bwlvl".length()).trim();
         } else if (lower.startsWith("bedwars ") || lower.equals("bedwars")) {
             afterCmd = "bwlvl " + trimmed.substring("bedwars".length()).trim();
+        } else if (lower.startsWith("nlvl ") || lower.equals("nlvl")) {
+            afterCmd = "nlvl " + trimmed.substring("nlvl".length()).trim();
+        } else if (lower.startsWith("networklevel ") || lower.equals("networklevel")) {
+            afterCmd = "nlvl " + trimmed.substring("networklevel".length()).trim();
         } else if (lower.startsWith("nick ") || lower.equals("nick")) {
             afterCmd = trimmed.substring("nick".length()).trim();
             if (!afterCmd.isEmpty()) {
                 String firstWord = afterCmd.split("\\s+")[0].toLowerCase();
-                if (!firstWord.equals("realskin") && !firstWord.equals("unnick") && !firstWord.equals("skin") && !firstWord.equals("bwlvl") && !firstWord.equals("bedwars")) {
+                if (!firstWord.equals("realskin") && !firstWord.equals("unnick") && !firstWord.equals("skin")
+                        && !firstWord.equals("bwlvl") && !firstWord.equals("bedwars") && !firstWord.equals("level")
+                        && !firstWord.equals("nlvl") && !firstWord.equals("networklevel")) {
                     afterCmd = "nick " + afterCmd;
                 }
             } else {
@@ -105,6 +111,12 @@ public class NickHiderCommand {
             case "bwlvl":
             case "bedwars":
                 handleBwLvl(args);
+                return true;
+
+            case "level":
+            case "nlvl":
+            case "networklevel":
+                handleNetworkLevel(args);
                 return true;
 
             case "help":
@@ -284,6 +296,99 @@ public class NickHiderCommand {
             NickHiderMod.sendMessage("§aSkin reset to your real account skin.");
             invalidateSkinCache();
         }
+    }
+
+    // ─── Hypixel Network Level Commands ─────────────────────────────────────
+
+    public static void handleNetworkLevel(String args) {
+        if (args.isEmpty() || args.equalsIgnoreCase("status")) {
+            printNetworkLevelStatus();
+            return;
+        }
+
+        if (args.equalsIgnoreCase("reset") || args.equalsIgnoreCase("clear")
+                || args.equalsIgnoreCase("off") || args.equalsIgnoreCase("disable")) {
+            dev.edtrick.nickhider.network.NetworkLevelManager.setEnabled(false);
+            NickHiderMod.sendMessage("§eHypixel Network Level spoofing §cDISABLED§e. (Showing real level).");
+            return;
+        }
+
+        if (args.equalsIgnoreCase("toggle")) {
+            boolean newState = !dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled();
+            dev.edtrick.nickhider.network.NetworkLevelManager.setEnabled(newState);
+            NickHiderMod.sendMessage(newState
+                    ? "§aHypixel Network Level spoofing §2ENABLED §7(Level: §b" + dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel() + "§7)"
+                    : "§eHypixel Network Level spoofing §cDISABLED§e.");
+            return;
+        }
+
+        if (args.equalsIgnoreCase("on") || args.equalsIgnoreCase("enable")) {
+            dev.edtrick.nickhider.network.NetworkLevelManager.setEnabled(true);
+            NickHiderMod.sendMessage("§aHypixel Network Level spoofing §2ENABLED §7(Level: §b" + dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel() + "§7)");
+            return;
+        }
+
+        try {
+            int lvl = Integer.parseInt(args.trim());
+            if (lvl < 0 || lvl > 10000) {
+                NickHiderMod.sendMessage("§cError: Network level must be between 0 and 10000!");
+                return;
+            }
+            dev.edtrick.nickhider.network.NetworkLevelManager.setFakeLevel(lvl);
+            dev.edtrick.nickhider.network.NetworkLevelManager.setEnabled(true);
+            NickHiderMod.sendMessage("§aHypixel Network Level set to: §b" + lvl + " §7(Spoofing §2ENABLED§7)");
+        } catch (NumberFormatException e) {
+            NickHiderMod.sendMessage("§cError: Invalid level \"" + args + "\". Must be an integer between 0 and 10000, or \"reset\".");
+            printNetworkLevelStatus();
+        }
+    }
+
+    public static void printNetworkLevelStatus() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) return;
+
+        boolean enabled = dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled();
+        int fake = dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel();
+        int real = dev.edtrick.nickhider.network.NetworkLevelManager.getDetectedRealLevel();
+
+        mc.thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.DARK_GRAY + "-----------------------------------------------------"));
+        mc.thePlayer.addChatMessage(new ChatComponentText(NickHiderMod.rainbowPrefix() + " " + EnumChatFormatting.AQUA + EnumChatFormatting.BOLD + "Hypixel Network Level Spoofing"));
+
+        // Status row
+        ChatComponentText statusRow = new ChatComponentText(EnumChatFormatting.GRAY + "Status: " + (enabled ? EnumChatFormatting.GREEN + "ENABLED " : EnumChatFormatting.RED + "DISABLED "));
+        ChatComponentText toggleBtn = new ChatComponentText(EnumChatFormatting.YELLOW + "[TOGGLE]");
+        ChatStyle toggleStyle = new ChatStyle();
+        toggleStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(EnumChatFormatting.YELLOW + "Click to toggle ON/OFF")));
+        toggleStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/nickhider nlvl toggle"));
+        toggleBtn.setChatStyle(toggleStyle);
+        statusRow.appendSibling(toggleBtn);
+        mc.thePlayer.addChatMessage(statusRow);
+
+        // Fake Level row
+        ChatComponentText levelRow = new ChatComponentText(EnumChatFormatting.GRAY + "Fake Level: " + EnumChatFormatting.AQUA + fake + " ");
+        ChatComponentText editBtn = new ChatComponentText(EnumChatFormatting.AQUA + "[EDIT]");
+        ChatStyle editStyle = new ChatStyle();
+        editStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(EnumChatFormatting.AQUA + "Click to type network level")));
+        editStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/nickhider nlvl "));
+        editBtn.setChatStyle(editStyle);
+        levelRow.appendSibling(editBtn);
+        mc.thePlayer.addChatMessage(levelRow);
+
+        // Real Level row
+        String realStr = (real >= 0) ? String.valueOf(real) : "Not detected yet (enter a lobby)";
+        mc.thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY + "Detected Real Level: " + EnumChatFormatting.WHITE + realStr));
+
+        // Quick Actions row
+        ChatComponentText actionRow = new ChatComponentText(EnumChatFormatting.GRAY + "Quick Actions: ");
+        ChatComponentText resetBtn = new ChatComponentText(EnumChatFormatting.RED + "[RESET / REAL LEVEL]");
+        ChatStyle resetStyle = new ChatStyle();
+        resetStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(EnumChatFormatting.RED + "Click to disable spoofing and restore real level")));
+        resetStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/nickhider nlvl reset"));
+        resetBtn.setChatStyle(resetStyle);
+        actionRow.appendSibling(resetBtn);
+        mc.thePlayer.addChatMessage(actionRow);
+
+        mc.thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.DARK_GRAY + "-----------------------------------------------------"));
     }
 
     // ─── Hypixel Bedwars Level Commands ──────────────────────────────────────
@@ -694,6 +799,9 @@ public class NickHiderCommand {
 
         sendCommandHelp("12", "/nickhider replay [NICK]", "/nickhider replay",
                 "Shows clickable list of replay players to select who you are,\nor sets your replay player name.");
+
+        sendCommandHelp("13", "/nickhider level <LVL>", "/nickhider level ",
+                "Sets your fake Hypixel Network Level (0 - 10000).\nSpoofs nametags, profile menu, scoreboard and XP bar.\nType \"reset\" to restore your real level.");
     }
 
     private static void sendCommandHelp(String num, String usage, String suggestCommand, String hoverDescription) {
@@ -739,19 +847,29 @@ public class NickHiderCommand {
                 return new String[]{"/bwlvl"};
             }
         }
+        if (lower.startsWith("/nl") && !leftOfCursor.contains(" ")) {
+            if ("/nlvl".startsWith(lower)) {
+                return new String[]{"/nlvl"};
+            }
+        }
 
-        // Autocomplete subcommands: "/nickhider ", "/nick ", or "/bwlvl "
-        if (lower.startsWith("/nickhider ") || lower.startsWith("/nick ") || lower.startsWith("/bwlvl ") || lower.startsWith("/bedwars ")) {
+        // Autocomplete subcommands: "/nickhider ", "/nick ", "/bwlvl ", or "/nlvl "
+        if (lower.startsWith("/nickhider ") || lower.startsWith("/nick ") || lower.startsWith("/bwlvl ")
+                || lower.startsWith("/bedwars ") || lower.startsWith("/nlvl ") || lower.startsWith("/networklevel ")) {
             int prefixLen = "/nickhider ".length();
             if (lower.startsWith("/nick ")) prefixLen = "/nick ".length();
             else if (lower.startsWith("/bwlvl ")) prefixLen = "/bwlvl ".length();
             else if (lower.startsWith("/bedwars ")) prefixLen = "/bedwars ".length();
+            else if (lower.startsWith("/nlvl ")) prefixLen = "/nlvl ".length();
+            else if (lower.startsWith("/networklevel ")) prefixLen = "/networklevel ".length();
 
             String afterCmd = leftOfCursor.substring(prefixLen);
 
-            String[] subcommands = new String[]{"nick", "skin", "unnick", "realskin", "bwlvl"};
+            String[] subcommands = new String[]{"nick", "skin", "unnick", "realskin", "bwlvl", "level", "nlvl", "servernick", "replay"};
             if (lower.startsWith("/bwlvl ") || lower.startsWith("/bedwars ")) {
                 subcommands = new String[]{"stars", "color", "icon", "toggle", "on", "off", "reset", "status"};
+            } else if (lower.startsWith("/nlvl ") || lower.startsWith("/networklevel ")) {
+                subcommands = new String[]{"reset", "toggle", "on", "off", "status"};
             }
 
             if (!afterCmd.contains(" ")) {

@@ -204,6 +204,9 @@ public class NickHiderMod implements ClientModInitializer {
             prop.setProperty("bwIconPreset", dev.edtrick.nickhider.bedwars.BedwarsLevelManager.getCustomIcon());
         }
 
+        prop.setProperty("enableNetworkLevel", String.valueOf(dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()));
+        prop.setProperty("networkLevel", String.valueOf(dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel()));
+
         try (OutputStream os = Files.newOutputStream(configFile)) {
             prop.store(os, "NickHider Mod Configuration");
         } catch (IOException e) {
@@ -253,6 +256,15 @@ public class NickHiderMod implements ClientModInitializer {
             } catch (NumberFormatException ignored) {}
             String ic = prop.getProperty("bwIconPreset", null);
             dev.edtrick.nickhider.bedwars.BedwarsLevelManager.loadValues(en, st, col, ic);
+
+            String enNl = prop.getProperty("enableNetworkLevel", "false");
+            boolean enN = Boolean.parseBoolean(enNl);
+            String lvlStr = prop.getProperty("networkLevel", "250");
+            int nl = 250;
+            try {
+                nl = Integer.parseInt(lvlStr);
+            } catch (NumberFormatException ignored) {}
+            dev.edtrick.nickhider.network.NetworkLevelManager.loadValues(enN, nl);
         } catch (IOException e) {
             LOGGER.error("[NickHider] Failed to load config", e);
         }
@@ -606,6 +618,10 @@ public class NickHiderMod implements ClientModInitializer {
             text = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterGeneralString(text);
         }
 
+        if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
+            text = dev.edtrick.nickhider.network.NetworkLevelManager.filterGeneralString(text);
+        }
+
         if (fakeNick == null) return text;
 
         java.util.List<String> names = getNamesToReplace();
@@ -679,7 +695,8 @@ public class NickHiderMod implements ClientModInitializer {
 
     public static IChatComponent filterComponent(IChatComponent component) {
         if (component == null) return null;
-        if (fakeNick == null && !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) return component;
+        if (fakeNick == null && !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()
+                && !dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) return component;
 
         try {
             java.util.List<ChatComponentText> leaves = new java.util.ArrayList<ChatComponentText>();
@@ -691,6 +708,18 @@ public class NickHiderMod implements ClientModInitializer {
                         String val = leaf.getChatComponentText_TextValue();
                         if (val != null && !val.isEmpty()) {
                             String filtered = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterGeneralString(val);
+                            if (!val.equals(filtered)) {
+                                setChatComponentTextValue(leaf, filtered);
+                            }
+                        }
+                    }
+                }
+
+                if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
+                    for (ChatComponentText leaf : leaves) {
+                        String val = leaf.getChatComponentText_TextValue();
+                        if (val != null && !val.isEmpty()) {
+                            String filtered = dev.edtrick.nickhider.network.NetworkLevelManager.filterGeneralString(val);
                             if (!val.equals(filtered)) {
                                 setChatComponentTextValue(leaf, filtered);
                             }

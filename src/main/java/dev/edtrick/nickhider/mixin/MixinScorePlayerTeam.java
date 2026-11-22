@@ -17,6 +17,9 @@ public class MixinScorePlayerTeam {
         if (ret != null) {
             boolean isLocal = NickHiderMod.isLocalPlayerName(playersName);
             ret = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterTeamPlayerName(ret, isLocal);
+            if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
+                ret = dev.edtrick.nickhider.network.NetworkLevelManager.filterScoreboardLine(ret);
+            }
             ret = NickHiderMod.filterString(ret);
             if (ret != null && !ret.equals(cir.getReturnValue())) {
                 cir.setReturnValue(ret);
