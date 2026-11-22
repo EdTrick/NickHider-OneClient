@@ -620,18 +620,8 @@ public class NickHiderMod implements ClientModInitializer {
         return sb.toString();
     }
 
-    public static String filterString(String text) {
-        if (text == null) return null;
-
-        if (dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) {
-            text = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterGeneralString(text);
-        }
-
-        if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
-            text = dev.edtrick.nickhider.network.NetworkLevelManager.filterGeneralString(text);
-        }
-
-        if (fakeNick == null) return text;
+    public static String filterNickOnly(String text) {
+        if (text == null || fakeNick == null) return text;
 
         java.util.List<String> names = getNamesToReplace();
         for (String name : names) {
@@ -640,6 +630,16 @@ public class NickHiderMod implements ClientModInitializer {
         }
 
         return text;
+    }
+
+    public static String filterString(String text) {
+        if (text == null) return null;
+
+        if (dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) {
+            text = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterGeneralString(text);
+        }
+
+        return filterNickOnly(text);
     }
 
     public static String translateColorCodes(String text) {
@@ -704,8 +704,7 @@ public class NickHiderMod implements ClientModInitializer {
 
     public static IChatComponent filterComponent(IChatComponent component) {
         if (component == null) return null;
-        if (fakeNick == null && !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()
-                && !dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) return component;
+        if (fakeNick == null && !dev.edtrick.nickhider.bedwars.BedwarsLevelManager.isEnabled()) return component;
 
         try {
             java.util.List<ChatComponentText> leaves = new java.util.ArrayList<ChatComponentText>();
@@ -717,18 +716,6 @@ public class NickHiderMod implements ClientModInitializer {
                         String val = leaf.getChatComponentText_TextValue();
                         if (val != null && !val.isEmpty()) {
                             String filtered = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterGeneralString(val);
-                            if (!val.equals(filtered)) {
-                                setChatComponentTextValue(leaf, filtered);
-                            }
-                        }
-                    }
-                }
-
-                if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
-                    for (ChatComponentText leaf : leaves) {
-                        String val = leaf.getChatComponentText_TextValue();
-                        if (val != null && !val.isEmpty()) {
-                            String filtered = dev.edtrick.nickhider.network.NetworkLevelManager.filterGeneralString(val);
                             if (!val.equals(filtered)) {
                                 setChatComponentTextValue(leaf, filtered);
                             }

@@ -1,15 +1,16 @@
 package dev.edtrick.nickhider.mixin;
 
 import dev.edtrick.nickhider.network.NetworkLevelManager;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
- * Intercepts text rendered on screen via FontRenderer, ensuring scoreboard lines,
- * nametags, and GUI elements displaying Hypixel Network Level are consistently spoofed
- * regardless of which mod or HUD element renders them.
+ * Intercepts text rendered on screen via FontRenderer, ensuring scoreboard lines
+ * displaying Hypixel Network Level are consistently spoofed in the HUD.
+ * Strictly limited to HUD (no open GUI screens) to prevent modifying other players' info in menus.
  */
 @Mixin(FontRenderer.class)
 public class MixinFontRenderer {
@@ -18,7 +19,10 @@ public class MixinFontRenderer {
     private String nickhider_modifyRenderString(String text) {
         if (text == null) return null;
         if (NetworkLevelManager.isEnabled()) {
-            text = NetworkLevelManager.filterScoreboardLine(text);
+            Minecraft mc = Minecraft.getMinecraft();
+            if (mc != null && mc.currentScreen == null) {
+                text = NetworkLevelManager.filterScoreboardLine(text);
+            }
         }
         return text;
     }
@@ -27,7 +31,10 @@ public class MixinFontRenderer {
     private String nickhider_modifyGetStringWidth(String text) {
         if (text == null) return null;
         if (NetworkLevelManager.isEnabled()) {
-            text = NetworkLevelManager.filterScoreboardLine(text);
+            Minecraft mc = Minecraft.getMinecraft();
+            if (mc != null && mc.currentScreen == null) {
+                text = NetworkLevelManager.filterScoreboardLine(text);
+            }
         }
         return text;
     }

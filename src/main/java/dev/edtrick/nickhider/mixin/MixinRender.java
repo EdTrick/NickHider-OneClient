@@ -33,14 +33,16 @@ public class MixinRender {
             isLocal = NickHiderMod.stripColorCodes(text).toLowerCase().contains(NickHiderMod.getFakeNick().toLowerCase());
         }
 
-        if (isLocal && dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
-            text = dev.edtrick.nickhider.network.NetworkLevelManager.replaceLevelInNametag(text);
+        if (isLocal) {
+            if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
+                text = dev.edtrick.nickhider.network.NetworkLevelManager.replaceLevelInNametag(text);
+            }
+
+            if (BedwarsLevelManager.isEnabled() && BedwarsLevelManager.isBedwarsActive()) {
+                text = BedwarsLevelManager.replaceTagInString(text);
+            }
         }
 
-        if (isLocal && BedwarsLevelManager.isEnabled() && BedwarsLevelManager.isBedwarsActive()) {
-            text = BedwarsLevelManager.replaceTagInString(text);
-        }
-
-        return NickHiderMod.filterString(text);
+        return NickHiderMod.filterNickOnly(text);
     }
 }

@@ -210,6 +210,71 @@ public class NetworkLevelManager {
     }
 
     /**
+     * Determines whether a GUI tooltip belongs to the local player.
+     * Strictly prevents spoofing network level when viewing another player's profile or inspecting other players.
+     */
+    public static boolean isLocalPlayerTooltip(List<String> textLines) {
+        if (textLines == null || textLines.isEmpty()) return false;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) return false;
+
+        // 1. Check open chest container title if available
+        if (mc.thePlayer.openContainer instanceof net.minecraft.inventory.ContainerChest) {
+            try {
+                net.minecraft.inventory.ContainerChest chest = (net.minecraft.inventory.ContainerChest) mc.thePlayer.openContainer;
+                String rawTitle = chest.getLowerChestInventory().getDisplayName().getUnformattedText();
+                String cleanTitle = NickHiderMod.stripColorCodes(rawTitle).trim().toLowerCase();
+
+                // If chest title is "<OtherPlayer>'s Profile" (e.g. "Mogeson's Profile")
+                if (cleanTitle.endsWith("'s profile")) {
+                    String owner = cleanTitle.substring(0, cleanTitle.length() - "'s profile".length()).trim();
+                    boolean isOwnerLocal = NickHiderMod.isLocalPlayerName(owner)
+                            || (NickHiderMod.getFakeNick() != null && owner.equalsIgnoreCase(NickHiderMod.getFakeNick()));
+                    if (!isOwnerLocal) {
+                        return false; // Definitely another player's profile!
+                    }
+                    return true; // Local player's profile!
+                }
+            } catch (Throwable ignored) {}
+        }
+
+        // 2. Check header line (line 0) of the tooltip
+        String header = NickHiderMod.stripColorCodes(textLines.get(0)).trim().toLowerCase();
+
+        // Own profile items
+        if (header.contains("my profile") || header.contains("character information") || header.contains("hypixel leveling")) {
+            return true;
+        }
+
+        // Check if tooltip mentions the local player's name
+        for (String name : NickHiderMod.getNamesToReplace()) {
+            if (name != null && !name.isEmpty() && header.contains(name.toLowerCase())) {
+                return true;
+            }
+        }
+        if (NickHiderMod.getFakeNick() != null && !NickHiderMod.getFakeNick().isEmpty()) {
+            if (header.contains(NickHiderMod.getFakeNick().toLowerCase())) {
+                return true;
+            }
+        }
+
+        // Check entire tooltip for explicit local player reference or your profile
+        for (String line : textLines) {
+            String clean = NickHiderMod.stripColorCodes(line).toLowerCase();
+            if (clean.contains("your hypixel level") || clean.contains("your level") || clean.contains("you are now level")) {
+                return true;
+            }
+            for (String name : NickHiderMod.getNamesToReplace()) {
+                if (name != null && !name.isEmpty() && clean.contains(name.toLowerCase())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * General string filter used for tooltips (e.g. Character Information GUI hover,
      * Hypixel Leveling brewing stand progress) and other GUI elements.
      */
