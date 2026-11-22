@@ -52,12 +52,16 @@ public class MixinEntityPlayerSP {
         if (BedwarsLevelManager.isEnabled() && BedwarsLevelManager.isBedwarsMatchActive()) {
             BedwarsLevelManager.setDetectedRealStars(level);
             ((EntityPlayerSP) (Object) this).experienceLevel = BedwarsLevelManager.getFakeStars();
-        } else {
+        } else if (dev.edtrick.nickhider.network.NetworkLevelManager.isInHypixelLobby()) {
             BedwarsLevelManager.setRealNonMatchXpLevel(level);
-            dev.edtrick.nickhider.network.NetworkLevelManager.setDetectedRealLevel(level);
+            if (level > 0 && level <= 5000 && level != dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel()) {
+                dev.edtrick.nickhider.network.NetworkLevelManager.setDetectedRealLevel(level);
+            }
             if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
                 ((EntityPlayerSP) (Object) this).experienceLevel = dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel();
             }
+        } else {
+            BedwarsLevelManager.setRealNonMatchXpLevel(level);
         }
     }
 
@@ -108,13 +112,19 @@ public class MixinEntityPlayerSP {
                 BedwarsLevelManager.setDetectedRealStars(player.experienceLevel);
                 player.experienceLevel = BedwarsLevelManager.getFakeStars();
             }
-        } else if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
+        } else if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()
+                && dev.edtrick.nickhider.network.NetworkLevelManager.isInHypixelLobby()) {
             if (player.experienceLevel != dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel()) {
-                dev.edtrick.nickhider.network.NetworkLevelManager.setDetectedRealLevel(player.experienceLevel);
+                if (player.experienceLevel > 0 && player.experienceLevel <= 5000) {
+                    dev.edtrick.nickhider.network.NetworkLevelManager.setDetectedRealLevel(player.experienceLevel);
+                }
                 player.experienceLevel = dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel();
             }
         } else {
             int realXp = BedwarsLevelManager.getRealNonMatchXpLevel();
+            if (realXp < 0) {
+                realXp = dev.edtrick.nickhider.network.NetworkLevelManager.getDetectedRealLevel();
+            }
             if (realXp >= 0 && (player.experienceLevel == BedwarsLevelManager.getFakeStars() || player.experienceLevel == dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel())
                     && player.experienceLevel != realXp) {
                 player.experienceLevel = realXp;

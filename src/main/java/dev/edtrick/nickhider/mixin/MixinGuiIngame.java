@@ -24,7 +24,8 @@ public class MixinGuiIngame {
         if (mc == null || mc.thePlayer == null) return;
         if (BedwarsLevelManager.isEnabled() && BedwarsLevelManager.isBedwarsMatchActive()) {
             mc.thePlayer.experienceLevel = BedwarsLevelManager.getFakeStars();
-        } else if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()) {
+        } else if (dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()
+                && dev.edtrick.nickhider.network.NetworkLevelManager.isInHypixelLobby()) {
             mc.thePlayer.experienceLevel = dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel();
         }
     }

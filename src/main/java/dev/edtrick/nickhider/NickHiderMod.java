@@ -206,6 +206,7 @@ public class NickHiderMod implements ClientModInitializer {
 
         prop.setProperty("enableNetworkLevel", String.valueOf(dev.edtrick.nickhider.network.NetworkLevelManager.isEnabled()));
         prop.setProperty("networkLevel", String.valueOf(dev.edtrick.nickhider.network.NetworkLevelManager.getFakeLevel()));
+        prop.setProperty("detectedRealNetworkLevel", String.valueOf(dev.edtrick.nickhider.network.NetworkLevelManager.getDetectedRealLevel()));
 
         try (OutputStream os = Files.newOutputStream(configFile)) {
             prop.store(os, "NickHider Mod Configuration");
@@ -265,6 +266,14 @@ public class NickHiderMod implements ClientModInitializer {
                 nl = Integer.parseInt(lvlStr);
             } catch (NumberFormatException ignored) {}
             dev.edtrick.nickhider.network.NetworkLevelManager.loadValues(enN, nl);
+
+            String detectedRealNlvl = prop.getProperty("detectedRealNetworkLevel", "-1");
+            try {
+                int realNl = Integer.parseInt(detectedRealNlvl);
+                if (realNl > 0) {
+                    dev.edtrick.nickhider.network.NetworkLevelManager.setDetectedRealLevel(realNl);
+                }
+            } catch (NumberFormatException ignored) {}
         } catch (IOException e) {
             LOGGER.error("[NickHider] Failed to load config", e);
         }

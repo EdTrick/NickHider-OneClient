@@ -309,7 +309,12 @@ public class NickHiderCommand {
         if (args.equalsIgnoreCase("reset") || args.equalsIgnoreCase("clear")
                 || args.equalsIgnoreCase("off") || args.equalsIgnoreCase("disable")) {
             dev.edtrick.nickhider.network.NetworkLevelManager.setEnabled(false);
-            NickHiderMod.sendMessage("§eHypixel Network Level spoofing §cDISABLED§e. (Showing real level).");
+            int real = dev.edtrick.nickhider.network.NetworkLevelManager.getDetectedRealLevel();
+            Minecraft mc = Minecraft.getMinecraft();
+            if (mc != null && mc.thePlayer != null && real >= 0 && dev.edtrick.nickhider.network.NetworkLevelManager.isInHypixelLobby()) {
+                mc.thePlayer.experienceLevel = real;
+            }
+            NickHiderMod.sendMessage("§eHypixel Network Level spoofing §cDISABLED§e. (Showing real level: §a" + (real >= 0 ? real : "detected in lobby") + "§e).");
             return;
         }
 
