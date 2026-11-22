@@ -34,7 +34,7 @@ public class MixinGuiPlayerTabOverlay {
             if (isLocal && BedwarsLevelManager.isEnabled() && BedwarsLevelManager.isBedwarsActive()) {
                 ret = BedwarsLevelManager.replaceTagInString(ret);
             }
-            ret = NickHiderMod.filterString(ret);
+            ret = NickHiderMod.filterNickOnly(ret);
         }
         return ret;
     }
@@ -58,7 +58,7 @@ public class MixinGuiPlayerTabOverlay {
                 ret = BedwarsLevelManager.replaceTagInString(ret);
             }
 
-            ret = NickHiderMod.filterString(ret);
+            ret = NickHiderMod.filterNickOnly(ret);
             if (!ret.equals(cir.getReturnValue())) {
                 cir.setReturnValue(ret);
             }

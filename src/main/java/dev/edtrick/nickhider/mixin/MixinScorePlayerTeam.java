@@ -24,7 +24,7 @@ public class MixinScorePlayerTeam {
             if (NetworkLevelManager.isEnabled()) {
                 ret = NetworkLevelManager.filterScoreboardLine(ret);
             }
-            ret = NickHiderMod.filterString(ret);
+            ret = NickHiderMod.filterNickOnly(ret);
             if (ret != null && !ret.equals(cir.getReturnValue())) {
                 cir.setReturnValue(ret);
             }

@@ -24,8 +24,9 @@ public class BedwarsLevelManager {
     private static int realNonMatchXpLevel = -1;
 
     // Pattern matching any Hypixel Bedwars star tag e.g. "[142✫]", "[16☆]", "[40☆]", "§7[§f142§7✫]", "§7[§f1§f4§f2§7✫§7]", "§c[§61§e0§a0§b0§d✪§5]"
+    // Strictly requires digits to prevent mistakenly matching guild tags with stars like "[★]" or "[✪]"
     public static final Pattern BW_TAG_REGEX = Pattern.compile(
-            "(?i)((?:§[0-9a-fk-orA-FK-OR])*)\\[([^]]*?[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*][^]]*?)\\]"
+            "(?i)((?:§[0-9a-fk-orA-FK-OR])*)\\[(?=[^]]*[0-9])([^]]*?[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*][^]]*?)\\]"
     );
 
     // Pattern matching scoreboard, nametag, and actionbar "Stars: 142", "BedWars: 142" or "Level: 142✫" (requires star icon for 'level')
@@ -463,7 +464,7 @@ public class BedwarsLevelManager {
     /**
      * Filters player name strings from ScorePlayerTeam.formatPlayerName.
      * When isLocalPlayer is true, replaces the player's Bedwars tag with the fake tag.
-     * Also replaces sidebar scoreboard lines matching "Stars: \d+".
+     * Also replaces sidebar scoreboard lines matching "Stars: \d+" or "Level: \d+✫".
      */
     public static String filterTeamPlayerName(String text, boolean isLocalPlayer) {
         if (text == null || !enabled || !isBedwarsActive()) return text;
@@ -476,18 +477,14 @@ public class BedwarsLevelManager {
                 recordRealStars(m.group());
                 text = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
             }
+            return text;
         }
 
-        // 2. Scoreboard lines like "Stars: 142" or "Level: 142" with prestige colors & icon
+        // 2. Scoreboard lines like "Stars: 142" or "Level: 142✫" with prestige colors & icon
         Matcher sbMatcher = SCOREBOARD_STARS_REGEX.matcher(text);
         if (sbMatcher.find()) {
             text = sbMatcher.replaceFirst(Matcher.quoteReplacement(sbMatcher.group(1) + getFormattedWithoutBrackets()));
-        }
-
-        // Also check for bracketed star tags on scoreboard lines (e.g. "Progress: [142✫]")
-        Matcher tagMatcher = BW_TAG_REGEX.matcher(text);
-        if (tagMatcher.find()) {
-            text = tagMatcher.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
+            return text;
         }
 
         return text;
