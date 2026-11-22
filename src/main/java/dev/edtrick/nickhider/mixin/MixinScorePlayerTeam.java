@@ -31,22 +31,6 @@ public class MixinScorePlayerTeam {
         }
     }
 
-    @Inject(method = "formatString", at = @At("RETURN"), cancellable = true)
-    private void nickhider_formatString(String input, CallbackInfoReturnable<String> cir) {
-        String ret = cir.getReturnValue();
-        if (ret != null) {
-            boolean isLocal = NickHiderMod.isLocalPlayerName(input);
-            ret = dev.edtrick.nickhider.bedwars.BedwarsLevelManager.filterTeamPlayerName(ret, isLocal);
-            if (NetworkLevelManager.isEnabled()) {
-                ret = NetworkLevelManager.filterScoreboardLine(ret);
-            }
-            ret = NickHiderMod.filterString(ret);
-            if (ret != null && !ret.equals(cir.getReturnValue())) {
-                cir.setReturnValue(ret);
-            }
-        }
-    }
-
     @Inject(method = "getColorSuffix", at = @At("RETURN"), cancellable = true)
     private void nickhider_getColorSuffix(CallbackInfoReturnable<String> cir) {
         if (!NetworkLevelManager.isEnabled()) return;

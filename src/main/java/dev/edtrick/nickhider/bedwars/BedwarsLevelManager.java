@@ -30,7 +30,7 @@ public class BedwarsLevelManager {
 
     // Pattern matching scoreboard, nametag, and actionbar "Stars: 142", "BedWars: 142" or "Level: 142", optionally with star icon
     public static final Pattern SCOREBOARD_STARS_REGEX = Pattern.compile(
-            "(?i)((?:stars|level|bedwars)\\s*:\\s*(?:§[0-9a-fk-orA-FK-OR])*)[0-9]{1,5}(?:\\s*(?:§[0-9a-fk-orA-FK-OR])*[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*])?"
+            "(?i)((?:§[0-9a-fk-orA-FK-OR]|\\s)*(?:stars|level|bedwars)(?:§[0-9a-fk-orA-FK-OR]|\\s)*:(?:§[0-9a-fk-orA-FK-OR]|\\s)*)(?:\\[?(?:(?:§[0-9a-fk-orA-FK-OR])*[0-9])+(?:§[0-9a-fk-orA-FK-OR]|\\s)*[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*]\\]?|[0-9]{1,5}(?:\\s*(?:§[0-9a-fk-orA-FK-OR])*[\\u2605\\u2606\\u269D\\u2725-\\u272F\\*])?)"
     );
 
     // ─── Getters & Setters ───────────────────────────────────────────────────
@@ -499,6 +499,7 @@ public class BedwarsLevelManager {
      */
     public static String filterTeamPlayerName(String text, boolean isLocalPlayer) {
         if (text == null || !enabled || !isBedwarsActive()) return text;
+        if (text.contains(getFormattedWithoutBrackets()) || text.contains(getFormattedTag())) return text;
 
         // 1. If it's the local player (tablist, nametag, scoreboard player line)
         if (isLocalPlayer) {
@@ -555,6 +556,7 @@ public class BedwarsLevelManager {
      */
     public static String filterGeneralString(String text) {
         if (text == null || !enabled || !isBedwarsActive()) return text;
+        if (text.contains(getFormattedWithoutBrackets()) || text.contains(getFormattedTag())) return text;
 
         List<String> names = NickHiderMod.getNamesToReplace();
         boolean hasLocalPlayer = false;
