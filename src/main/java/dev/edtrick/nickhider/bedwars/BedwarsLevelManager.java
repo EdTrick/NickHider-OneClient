@@ -379,24 +379,31 @@ public class BedwarsLevelManager {
                 return component;
             }
 
+            // Strip any leading timestamp e.g. "[23:23] ", "[23:23:01] ", "[11:23 PM] "
+            String clean = NickHiderMod.stripColorCodes(fullUnformatted);
+            String noTimestamp = clean.replaceFirst("(?i)^(?:\\[[0-9]{1,2}:[0-9]{1,2}(?::[0-9]{1,2})?(?:\\s*[AP]M)?\\]|[0-9]{1,2}:[0-9]{1,2}(?::[0-9]{1,2})?)\\s*", "");
+
             // 2. Identify if the local player is the owner/speaker of this message:
-            int colonIdx = fullUnformatted.indexOf(':');
+            int colonIdx = noTimestamp.indexOf(": ");
+            if (colonIdx == -1) {
+                colonIdx = noTimestamp.indexOf(':');
+            }
             boolean isLocalMessage = false;
 
             if (colonIdx != -1) {
-                // In chat messages, the speaker prefix is everything before the first colon
-                String speakerPrefix = fullUnformatted.substring(0, colonIdx);
+                // In chat messages, the speaker prefix is everything before the speaker colon
+                String speakerPrefix = noTimestamp.substring(0, colonIdx);
                 isLocalMessage = NickHiderMod.containsLocalPlayerName(speakerPrefix);
                 if (!isLocalMessage && NickHiderMod.getFakeNick() != null && !NickHiderMod.getFakeNick().isEmpty()) {
                     isLocalMessage = speakerPrefix.toLowerCase().contains(NickHiderMod.getFakeNick().toLowerCase());
                 }
             } else {
                 // If there is no colon, check for pre-game lobby join/quit messages
-                String lower = fullUnformatted.toLowerCase();
+                String lower = noTimestamp.toLowerCase();
                 int actionIdx = lower.indexOf("has joined");
                 if (actionIdx == -1) actionIdx = lower.indexOf("has quit");
                 if (actionIdx != -1) {
-                    String playerPart = fullUnformatted.substring(0, actionIdx);
+                    String playerPart = noTimestamp.substring(0, actionIdx);
                     isLocalMessage = NickHiderMod.containsLocalPlayerName(playerPart);
                     if (!isLocalMessage && NickHiderMod.getFakeNick() != null && !NickHiderMod.getFakeNick().isEmpty()) {
                         isLocalMessage = playerPart.toLowerCase().contains(NickHiderMod.getFakeNick().toLowerCase());
@@ -414,14 +421,44 @@ public class BedwarsLevelManager {
             collectLeaves(component, leaves);
             if (leaves.isEmpty()) return component;
 
-            for (ChatComponentText leaf : leaves) {
+            int speakerLeafIdx = -1;
+            List<String> names = NickHiderMod.getNamesToReplace();
+            for (int i = 0; i < leaves.size(); i++) {
+                String leafText = NickHiderMod.stripColorCodes(leaves.get(i).getChatComponentText_TextValue()).toLowerCase();
+                for (String name : names) {
+                    if (name != null && !name.isEmpty() && leafText.contains(name.toLowerCase())) {
+                        speakerLeafIdx = i;
+                        break;
+                    }
+                }
+                if (speakerLeafIdx != -1) break;
+            }
+            if (speakerLeafIdx == -1) speakerLeafIdx = leaves.size() - 1;
+
+            boolean replaced = false;
+            for (int i = speakerLeafIdx; i >= 0; i--) {
+                ChatComponentText leaf = leaves.get(i);
                 String val = leaf.getChatComponentText_TextValue();
                 Matcher m = BW_TAG_REGEX.matcher(val);
                 if (m.find()) {
                     recordRealStars(m.group());
-                    String replaced = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
-                    setLeafText(leaf, replaced);
+                    String rep = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
+                    setLeafText(leaf, rep);
+                    replaced = true;
                     break; // Only the speaker's star tag in the header
+                }
+            }
+
+            if (!replaced) {
+                for (ChatComponentText leaf : leaves) {
+                    String val = leaf.getChatComponentText_TextValue();
+                    Matcher m = BW_TAG_REGEX.matcher(val);
+                    if (m.find()) {
+                        recordRealStars(m.group());
+                        String rep = m.replaceAll(Matcher.quoteReplacement(getFormattedTag()));
+                        setLeafText(leaf, rep);
+                        break;
+                    }
                 }
             }
 
@@ -434,8 +471,12 @@ public class BedwarsLevelManager {
     public static String filterChatString(String text) {
         if (text == null || !enabled || !isBedwarsActive()) return text;
 
-        int colon = text.indexOf(':');
-        String speaker = (colon != -1) ? text.substring(0, colon) : text;
+        String clean = NickHiderMod.stripColorCodes(text);
+        String noTimestamp = clean.replaceFirst("(?i)^(?:\\[[0-9]{1,2}:[0-9]{1,2}(?::[0-9]{1,2})?(?:\\s*[AP]M)?\\]|[0-9]{1,2}:[0-9]{1,2}(?::[0-9]{1,2})?)\\s*", "");
+        int colon = noTimestamp.indexOf(": ");
+        if (colon == -1) colon = noTimestamp.indexOf(':');
+
+        String speaker = (colon != -1) ? noTimestamp.substring(0, colon) : noTimestamp;
         List<String> names = NickHiderMod.getNamesToReplace();
         boolean hasLocalPlayer = false;
         for (String name : names) {
@@ -518,8 +559,11 @@ public class BedwarsLevelManager {
 
         // If the string contains a colon (like a chat message "Speaker: Message"),
         // the local player MUST be in the speaker portion (before the colon).
-        int colon = text.indexOf(':');
-        String targetPrefix = (colon != -1) ? text.substring(0, colon) : text;
+        String clean = NickHiderMod.stripColorCodes(text);
+        String noTimestamp = clean.replaceFirst("(?i)^(?:\\[[0-9]{1,2}:[0-9]{1,2}(?::[0-9]{1,2})?(?:\\s*[AP]M)?\\]|[0-9]{1,2}:[0-9]{1,2}(?::[0-9]{1,2})?)\\s*", "");
+        int colon = noTimestamp.indexOf(": ");
+        if (colon == -1) colon = noTimestamp.indexOf(':');
+        String targetPrefix = (colon != -1) ? noTimestamp.substring(0, colon) : noTimestamp;
 
         List<String> names = NickHiderMod.getNamesToReplace();
         boolean hasLocalPlayer = false;
