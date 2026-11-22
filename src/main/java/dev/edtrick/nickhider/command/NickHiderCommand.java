@@ -841,21 +841,19 @@ public class NickHiderCommand {
         if (leftOfCursor == null) return null;
         String lower = leftOfCursor.toLowerCase();
 
-        // Autocomplete the root command
-        if (lower.startsWith("/nick") && !leftOfCursor.contains(" ")) {
-            if ("/nickhider".startsWith(lower)) {
-                return new String[]{"/nickhider"};
+        // Autocomplete root commands
+        if (leftOfCursor.startsWith("/") && !leftOfCursor.contains(" ")) {
+            String[] commands = new String[]{"/nickhider", "/bwlvl", "/nlvl", "/bedwars", "/networklevel", "/nick", "/skin", "/unnick", "/realskin"};
+            List<String> matches = new ArrayList<>();
+            for (String cmd : commands) {
+                if (cmd.startsWith(lower)) {
+                    matches.add(cmd);
+                }
             }
-        }
-        if (lower.startsWith("/bw") && !leftOfCursor.contains(" ")) {
-            if ("/bwlvl".startsWith(lower)) {
-                return new String[]{"/bwlvl"};
+            if (!matches.isEmpty()) {
+                return matches.toArray(new String[0]);
             }
-        }
-        if (lower.startsWith("/nl") && !leftOfCursor.contains(" ")) {
-            if ("/nlvl".startsWith(lower)) {
-                return new String[]{"/nlvl"};
-            }
+            return null;
         }
 
         // Autocomplete subcommands: "/nickhider ", "/nick ", "/bwlvl ", or "/nlvl "
@@ -940,6 +938,15 @@ public class NickHiderCommand {
                             return list.toArray(new String[0]);
                         }
                     }
+                } else if (sub.equals("nlvl") || sub.equals("networklevel") || sub.equals("level")) {
+                    String[] nlvlSubcommands = new String[]{"reset", "toggle", "on", "off", "status"};
+                    List<String> list = new ArrayList<>();
+                    for (String nlvlSub : nlvlSubcommands) {
+                        if (nlvlSub.startsWith(currentArg)) {
+                            list.add(nlvlSub);
+                        }
+                    }
+                    return list.toArray(new String[0]);
                 }
             }
         }

@@ -15,15 +15,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinGuiChat {
 
     @Shadow
+    private boolean waitingOnAutocomplete;
+
+    @Shadow
     public abstract void onAutocompleteResponse(String[] matches);
 
     @Inject(method = "sendAutocompleteRequest", at = @At("HEAD"), cancellable = true)
     private void nickhider_onSendAutocomplete(String leftOfCursor, String fullText, CallbackInfo ci) {
         if (leftOfCursor == null) return;
-        String[] completions = NickHiderCommand.getTabCompletions(leftOfCursor);
-        if (completions != null && completions.length > 0) {
-            this.onAutocompleteResponse(completions);
-            ci.cancel();
-        }
+        try {
+            String[] completions = NickHiderCommand.getTabCompletions(leftOfCursor);
+            if (completions != null && completions.length > 0) {
+                this.waitingOnAutocomplete = true;
+                this.onAutocompleteResponse(completions);
+                ci.cancel();
+            }
+        } catch (Throwable ignored) {}
     }
 }

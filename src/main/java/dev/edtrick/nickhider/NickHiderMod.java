@@ -68,6 +68,10 @@ public class NickHiderMod implements ClientModInitializer {
 
         OneConfigCompat.init();
 
+        try {
+            Class.forName("dev.edtrick.nickhider.command.NickHiderCommand");
+        } catch (Throwable ignored) {}
+
         LOGGER.info("[NickHider] Mod ready. fakeNick={}, fakeSkinOwner={}",
                 fakeNick, fakeSkinOwner);
     }
